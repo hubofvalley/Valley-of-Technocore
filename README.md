@@ -22,4 +22,4 @@ Evidence is not trust, authorisation, eligibility, or a reward claim. See [the v
 
 ## Status
 
-Specification baseline only. No runtime implementation has been added.
+`0.1.0-rc.1` implementation candidate. The contract, runtime, fixtures, and hostile-input tests are ready for independent safety review; this is not a public release.

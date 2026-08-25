@@ -1,0 +1,16 @@
+{
+  "name": "valley-of-technocore",
+  "version": "0.1.0-rc.1",
+  "private": true,
+  "description": "Offline Technocore contribution-evidence toolkit",
+  "type": "module",
+  "bin": {
+    "valley-technocore": "bin/valley-technocore.js"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
