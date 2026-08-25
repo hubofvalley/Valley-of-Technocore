@@ -2,6 +2,10 @@ import { createHash, createPublicKey, verify as verifySignature } from 'node:cry
 
 const SCHEMA = 'gv.valley-of-technocore.evidence/1';
 const MAX_INPUT_BYTES = 1024 * 1024;
+const MAX_JSON_DEPTH = 16;
+const MAX_JSON_STRING_CHARS = 262144;
+const MAX_DID_CHARS = 128;
+const MAX_SEQUENCE = BigInt(Number.MAX_SAFE_INTEGER);
 const INPUT_KEYS = ['room', 'sequence', 'server_attributed_did', 'signer_did', 'payload_b64u', 'signature_b64u'];
 const B64U = /^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2,3})?$/;
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -31,10 +35,10 @@ export function parseStrictJson(text) {
       const c = text[i++];
       if (c === '"') return out;
       if (c < ' ') fail('control character in JSON string');
-      if (c !== '\\') { out += c; continue; }
+      if (c !== '\\') { out += c; if (out.length > MAX_JSON_STRING_CHARS) fail('JSON string exceeds limit'); continue; }
       const e = text[i++];
       const simple = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
-      if (Object.hasOwn(simple, e)) { out += simple[e]; continue; }
+      if (Object.hasOwn(simple, e)) { out += simple[e]; if (out.length > MAX_JSON_STRING_CHARS) fail('JSON string exceeds limit'); continue; }
       if (e !== 'u' || !/^[0-9a-fA-F]{4}$/u.test(text.slice(i, i + 4))) fail('invalid JSON escape');
       const first = Number.parseInt(text.slice(i, i + 4), 16); i += 4;
       if (first >= 0xd800 && first <= 0xdbff) {
@@ -44,10 +48,12 @@ export function parseStrictJson(text) {
         out += String.fromCodePoint(0x10000 + ((first - 0xd800) << 10) + second - 0xdc00); i += 6;
       } else if (first >= 0xdc00 && first <= 0xdfff) fail('unpaired surrogate');
       else out += String.fromCodePoint(first);
+      if (out.length > MAX_JSON_STRING_CHARS) fail('JSON string exceeds limit');
     }
     fail('unterminated JSON string');
   };
-  const value = () => {
+  const value = (depth = 0) => {
+    if (depth > MAX_JSON_DEPTH) fail('JSON nesting exceeds limit');
     ws();
     if (text[i] === '"') return parseString();
     if (text[i] === '{') {
@@ -56,7 +62,7 @@ export function parseStrictJson(text) {
       while (true) {
         ws(); if (text[i] !== '"') fail('object key must be a string');
         const key = parseString(); if (seen.has(key)) fail(`duplicate key: ${key}`); seen.add(key);
-        ws(); if (text[i++] !== ':') fail('expected colon'); object[key] = value(); ws();
+        ws(); if (text[i++] !== ':') fail('expected colon'); object[key] = value(depth + 1); ws();
         if (text[i] === '}') { i += 1; return object; }
         if (text[i++] !== ',') fail('expected comma');
       }
@@ -89,7 +95,7 @@ function decodeBase64url(value, label, length) {
 }
 
 function decodeBase58(value) {
-  if (!value || [...value].some((c) => !BASE58.includes(c))) fail('DID has invalid base58btc');
+  if (!value || value.length > MAX_DID_CHARS || [...value].some((c) => !BASE58.includes(c))) fail('DID has invalid base58btc');
   let number = 0n;
   for (const c of value) number = number * 58n + BigInt(BASE58.indexOf(c));
   let hex = number.toString(16); if (hex.length % 2) hex = `0${hex}`;
@@ -106,13 +112,43 @@ function encodeBase58(bytes) {
 }
 
 function didKeyBytes(did) {
-  if (typeof did !== 'string' || !did.startsWith('did:key:z')) fail('only did:key with base58btc is supported');
+  if (typeof did !== 'string' || did.length > MAX_DID_CHARS || !did.startsWith('did:key:z')) fail('only did:key with base58btc is supported');
   const decoded = decodeBase58(did.slice(9));
   if (encodeBase58(decoded) !== did.slice(9)) fail('DID must use canonical base58btc');
   if (decoded.length !== 34 || decoded[0] !== 0xed || decoded[1] !== 0x01) fail('only Ed25519 did:key is supported');
   const key = decoded.subarray(2);
   if (WEAK_KEYS.has(key.toString('hex'))) fail('weak Ed25519 key is unsupported');
+  validateEd25519Encoding(key);
   return key;
+}
+
+function mod(value, modulus) {
+  const result = value % modulus;
+  return result < 0n ? result + modulus : result;
+}
+
+function modPow(base, exponent, modulus) {
+  let result = 1n;
+  for (let value = mod(base, modulus), power = exponent; power > 0n; power >>= 1n, value = value * value % modulus) {
+    if (power & 1n) result = result * value % modulus;
+  }
+  return result;
+}
+
+function validateEd25519Encoding(key) {
+  const p = (1n << 255n) - 19n;
+  const d = mod(-121665n * modPow(121666n, p - 2n, p), p);
+  const bytes = Buffer.from(key);
+  const sign = bytes[31] >> 7;
+  bytes[31] &= 0x7f;
+  let y = 0n;
+  for (let index = 31; index >= 0; index -= 1) y = (y << 8n) + BigInt(bytes[index]);
+  if (y >= p) fail('Ed25519 public key has noncanonical encoding');
+  const y2 = y * y % p;
+  const x2 = mod((y2 - 1n) * modPow(d * y2 + 1n, p - 2n, p), p);
+  let x = modPow(x2, (p + 3n) / 8n, p);
+  if (x * x % p !== x2) x = x * modPow(2n, (p - 1n) / 4n, p) % p;
+  if (x * x % p !== x2 || (x === 0n && sign === 1)) fail('Ed25519 public key is not a valid point encoding');
 }
 
 function validateRoom(room) {
@@ -121,7 +157,7 @@ function validateRoom(room) {
 
 function validateSequence(sequence) {
   const integer = typeof sequence === 'bigint' ? sequence : Number.isSafeInteger(sequence) ? BigInt(sequence) : null;
-  if (integer === null || integer < 0n || integer > 9223372036854775807n) fail('sequence must be an integer from 0 through 9223372036854775807');
+  if (integer === null || integer < 0n || integer > MAX_SEQUENCE) fail(`sequence must be an integer from 0 through ${MAX_SEQUENCE}`);
 }
 
 function validateInput(input) {

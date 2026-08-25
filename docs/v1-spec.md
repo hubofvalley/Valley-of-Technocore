@@ -15,7 +15,7 @@ valley-technocore verify-evidence < contribution-proof.json
 
 `verify-evidence` accepts one evidence object on stdin and outputs a verification report with `schema_status`, `payload_hash_status`, `did_status`, `server_attribution_status`, `signature_status`, and `authority`. Validation statuses are `valid` or `invalid`; `server_attribution_status` is always `observed-only`, while `authority` is always `none`. Exit codes: `0` verified, `1` internal or runtime I/O failure, `2` malformed or unsupported evidence, `3` hash or signature failure. No relationship or authority is inferred by comparing the two DIDs.
 
-Both commands read stdin once, write exactly one canonical JSON object without a trailing newline to stdout on processable input, and accept at most 1,048,576 bytes including whitespace. Diagnostics go to stderr. Input must be UTF-8 without a BOM and contain exactly one JSON object; surrounding JSON whitespace is allowed. `sequence` is an integer token from 0 through 9223372036854775807 (`2^63−1`) and is preserved without loss of precision. `room` is 1–128 ASCII characters, starts with a letter or digit, and otherwise permits only letters, digits, `.`, `_`, and `-`.
+Both commands read stdin once, write exactly one canonical JSON object without a trailing newline to stdout on processable input, and accept at most 1,048,576 bytes including whitespace. Diagnostics go to stderr. Input must be UTF-8 without a BOM and contain exactly one JSON object; surrounding JSON whitespace is allowed. JSON nesting is limited to 16 levels and each decoded JSON string to 262,144 UTF-16 code units. `sequence` is an integer token from 0 through 9007199254740991 (`2^53−1`), the RFC 8785/I-JSON interoperable integer range, and is preserved without loss of precision. `room` is 1–128 ASCII characters, starts with a letter or digit, and otherwise permits only letters, digits, `.`, `_`, and `-`.
 
 ## Evidence schema v1
 
@@ -34,7 +34,7 @@ Both commands read stdin once, write exactly one canonical JSON object without a
 }
 ```
 
-All fields are required and every object rejects unknown properties. v1 accepts only `did:key:z<base58btc>`. Its canonical base58btc decoding must be exactly the Ed25519 multicodec prefix `ed 01` followed by a non-weak 32-byte Ed25519 public key. DID URLs, other multibase encodings, other codecs, noncanonical encodings, and weak keys are unsupported.
+All fields are required and every object rejects unknown properties. v1 accepts only `did:key:z<base58btc>` of at most 128 characters. Its canonical base58btc decoding must be exactly the Ed25519 multicodec prefix `ed 01` followed by a canonical, valid, non-weak 32-byte Ed25519 point encoding. DID URLs, other multibase encodings, other codecs, noncanonical encodings, invalid point encodings, and weak keys are unsupported.
 
 `server_attributed_did` is an observed attribution, not cryptographic authority. A verified detached signature proves only that the public key from `signer_did` verifies the exact decoded `payload_b64u` bytes using pure Ed25519. It is never checked against the base64url text, hash, canonical JSON, or `server_attributed_did`, and does not use Ed25519ph or Ed25519ctx.
 
