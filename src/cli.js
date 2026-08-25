@@ -62,7 +62,11 @@ export function parseStrictJson(text) {
       }
     }
     const token = text.slice(i).match(/^-?(?:0|[1-9]\d*)/u)?.[0];
-    if (token) { i += token.length; const number = Number(token); if (!Number.isSafeInteger(number)) fail('integer outside safe range'); return number; }
+    if (token) {
+      i += token.length;
+      const integer = BigInt(token);
+      return integer <= BigInt(Number.MAX_SAFE_INTEGER) && integer >= BigInt(Number.MIN_SAFE_INTEGER) ? Number(integer) : integer;
+    }
     fail('only JSON objects, strings, and integers are supported');
   };
   const result = value(); ws(); if (i !== text.length) fail('trailing JSON content');
@@ -112,13 +116,18 @@ function didKeyBytes(did) {
 }
 
 function validateRoom(room) {
-  if (typeof room !== 'string' || Buffer.byteLength(room, 'utf8') < 1 || Buffer.byteLength(room, 'utf8') > 256 || /[\u0000-\u001f\u007f]/u.test(room)) fail('room must be 1-256 UTF-8 bytes without ASCII controls');
+  if (typeof room !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/u.test(room)) fail('room must be 1-128 ASCII letters, digits, dots, underscores, or hyphens');
+}
+
+function validateSequence(sequence) {
+  const integer = typeof sequence === 'bigint' ? sequence : Number.isSafeInteger(sequence) ? BigInt(sequence) : null;
+  if (integer === null || integer < 0n || integer > 9223372036854775807n) fail('sequence must be an integer from 0 through 9223372036854775807');
 }
 
 function validateInput(input) {
   exactKeys(input, INPUT_KEYS, 'input');
   validateRoom(input.room);
-  if (!Number.isSafeInteger(input.sequence) || input.sequence < 0) fail('sequence must be a non-negative safe integer');
+  validateSequence(input.sequence);
   didKeyBytes(input.server_attributed_did); didKeyBytes(input.signer_did);
   decodeBase64url(input.payload_b64u, 'payload_b64u');
   decodeBase64url(input.signature_b64u, 'signature_b64u', 64);
@@ -130,7 +139,7 @@ function validateEvidence(evidence) {
   exactKeys(evidence.source, ['kind', 'room', 'sequence'], 'source');
   if (evidence.source.kind !== 'technocore-room') fail('unsupported source kind');
   validateRoom(evidence.source.room);
-  if (!Number.isSafeInteger(evidence.source.sequence) || evidence.source.sequence < 0) fail('invalid sequence');
+  validateSequence(evidence.source.sequence);
   exactKeys(evidence.attribution, ['server_attributed_did'], 'attribution');
   didKeyBytes(evidence.attribution.server_attributed_did);
   exactKeys(evidence.statement, ['signer_did', 'payload_b64u', 'payload_sha256', 'signature'], 'statement');
@@ -172,7 +181,7 @@ export function verifyEvidence(evidence) {
     schema_status: 'valid',
     payload_hash_status: hashValid ? 'valid' : 'invalid',
     did_status: 'valid',
-    server_attribution_status: evidence.attribution.server_attributed_did === evidence.statement.signer_did ? 'match' : 'mismatch',
+    server_attribution_status: 'observed-only',
     signature_status: signatureValid ? 'valid' : 'invalid',
     authority: 'none'
   };
@@ -180,6 +189,7 @@ export function verifyEvidence(evidence) {
 
 function canonicalJson(value) {
   if (value === null || typeof value === 'boolean' || typeof value === 'number') return JSON.stringify(value);
+  if (typeof value === 'bigint') return value.toString(10);
   if (typeof value === 'string') return JSON.stringify(value);
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
   return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;

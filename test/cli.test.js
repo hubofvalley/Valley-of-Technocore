@@ -26,7 +26,7 @@ test('creates byte-identical canonical evidence', () => {
 test('verifies RFC 8032 Ed25519 test vector', () => {
   const report = verifyEvidence(createEvidence(validInput));
   assert.equal(report.payload_hash_status, 'valid'); assert.equal(report.signature_status, 'valid');
-  assert.equal(report.authority, 'none'); assert.equal(report.server_attribution_status, 'match');
+  assert.equal(report.authority, 'none'); assert.equal(report.server_attribution_status, 'observed-only');
 });
 
 test('returns exit 3 for modified hash or signature', () => {
@@ -52,10 +52,10 @@ test('rejects unsupported DID, invalid base64url, and oversized input', () => {
   assert.equal(result.status, 2); assert.match(result.stderr, /exceeds 1 MiB/u);
 });
 
-test('rejects BOM, nested duplicates, non-integer syntax, and weak keys', () => {
+test('rejects BOM, nested duplicates, non-integer syntax, overflow, and weak keys', () => {
   assert.equal(cli('create-evidence', `\ufeff${JSON.stringify(validInput)}`).status, 2);
   assert.throws(() => parseStrictJson('{"x":{"value":1,"value":2}}'));
-  for (const sequence of ['1.0', '1e0', '9007199254740992']) {
+  for (const sequence of ['1.0', '1e0', '9223372036854775808']) {
     const text = JSON.stringify(validInput).replace('"sequence":0', `"sequence":${sequence}`);
     assert.equal(cli('create-evidence', text).status, 2);
   }
@@ -63,17 +63,25 @@ test('rejects BOM, nested duplicates, non-integer syntax, and weak keys', () => 
   assert.throws(() => createEvidence({ ...validInput, signer_did: weakDid }));
 });
 
-test('different valid server attribution is informational', () => {
+test('preserves maximum signed 63-bit sequence without precision loss', () => {
+  const text = JSON.stringify(validInput).replace('"sequence":0', '"sequence":9223372036854775807');
+  const result = cli('create-evidence', text);
+  assert.equal(result.status, 0); assert.match(result.stdout, /"sequence":9223372036854775807/u);
+  assert.equal(cli('verify-evidence', result.stdout).status, 0);
+});
+
+test('server attribution remains observed-only regardless of DID equality', () => {
   const otherDid = 'did:key:z6MkqRYqQiSgvMVa8mHoVXdYGrGJ5Z7kCqKxYS1a7nZKrX1R';
   const evidence = createEvidence({ ...validInput, server_attributed_did: otherDid });
   const report = verifyEvidence(evidence);
-  assert.equal(report.signature_status, 'valid'); assert.equal(report.server_attribution_status, 'mismatch');
+  assert.equal(report.signature_status, 'valid'); assert.equal(report.server_attribution_status, 'observed-only');
 });
 
-test('malicious strings remain inert and authority stays none', () => {
-  const input = { ...validInput, room: 'https://evil.invalid/$(touch nope)' };
-  const evidence = createEvidence(input);
-  assert.equal(evidence.source.room, input.room); assert.equal(evidence.authority, 'none');
+test('room accepts bounded identifiers and rejects URL or shell-like strings', () => {
+  assert.equal(createEvidence({ ...validInput, room: 'lobby-1.test_room' }).authority, 'none');
+  for (const room of ['https://evil.invalid', '$(touch nope)', '../shadow', 'has space', 'a'.repeat(129)]) {
+    assert.throws(() => createEvidence({ ...validInput, room }));
+  }
 });
 
 test('malformed input and unsupported command return exit 2', () => {
