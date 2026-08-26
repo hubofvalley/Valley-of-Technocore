@@ -3,6 +3,7 @@
   "version": "0.1.0-rc.4",
   "private": true,
   "description": "Offline Technocore contribution-evidence toolkit",
+  "license": "Apache-2.0",
   "type": "module",
   "bin": {
     "valley-technocore": "bin/valley-technocore.js"

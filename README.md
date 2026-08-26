@@ -1,6 +1,6 @@
 # Valley of Technocore
 
-An unofficial, fully local/offline toolkit for producing and independently verifying portable evidence from already-public Technocore records.
+An unofficial, fully local toolkit for producing and independently verifying portable evidence from already-public Technocore records.
 
 ## v1 boundary
 
@@ -13,13 +13,25 @@ It will not generate or load private keys, create DIDs, access a wallet, connect
 
 Evidence is not trust, authorisation, eligibility, or a reward claim. See [the v1 specification](docs/v1-spec.md).
 
-## Delivery gates
+## Safety gates
 
 1. Build against the frozen v1 contract.
 2. Pass deterministic and hostile-input tests.
 3. Pass an independent safe-to-run review.
-4. Publish only after internal approval.
+4. Publish only after internal approval and a public-repository hygiene review.
+
+## Development
+
+Requires Node.js 20 or newer.
+
+```bash
+npm test
+```
+
+## Licence
+
+Apache-2.0. See [LICENSE](LICENSE).
 
 ## Status
 
-`0.1.0-rc.4` implementation candidate. The contract, runtime, fixtures, and hostile-input tests are ready for red-team review; this is not a public release.
+`0.1.0-rc.4` is the initial public source release. It is deliberately limited to the offline v1 boundary above.
