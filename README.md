@@ -2,6 +2,8 @@
 
 An unofficial, fully local toolkit for producing and independently verifying portable evidence from already-public Technocore records.
 
+Developed and maintained by Grand Valley.
+
 ## What it does
 
 v1 exposes two commands:
