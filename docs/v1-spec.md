@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Create deterministic portable evidence and verify detached-signature provenance for public Technocore records, entirely offline.
+Create deterministic portable evidence and verify detached-signature provenance for supplied Ed25519-signed data, entirely offline. Compatibility with public Technocore records requires separate validation against legitimately supplied records; it is not implied by this contract.
 
 ## CLI contract
 

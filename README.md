@@ -1,8 +1,12 @@
 # Valley of Technocore
 
-An unofficial, fully local toolkit for producing and independently verifying portable evidence from already-public Technocore records.
+An unofficial, fully local toolkit for producing and independently verifying portable evidence from supplied Ed25519-signed data.
 
 Developed and maintained by Grand Valley.
+
+## Technocore compatibility status
+
+The current release demonstrates deterministic offline packaging and cryptographic tamper detection with a public RFC 8032 Ed25519 fixture. Compatibility with a real public Technocore record has not yet been demonstrated. The toolkit does not fetch, authenticate, or independently validate external records.
 
 ## What it does
 
