@@ -1,13 +1,13 @@
-# Public fact lock — v0.1.0-rc.5
+# Public fact lock — v0.1.0-rc.6
 
-This page defines the factual boundary for public communication about Valley of Technocore `v0.1.0-rc.5` (`57a3119bb0686bf914b8a89b72937c700d10b147`). It is not launch copy and must not be treated as an `rc.6` release fact sheet.
+This page defines the factual boundary for public communication about Valley of Technocore `v0.1.0-rc.6` (`cd179a731a30ac6d16b1bb93b9ac547a2f143d79`). It is not launch copy and must not be treated as a stable or final v1 fact sheet.
 
 ## Required framing
 
 Every substantive description must preserve these four points:
 
 - **Unofficial:** this project does not claim Technocore or FLOP approval, affiliation, endorsement, or recognition.
-- **Release candidate:** `v0.1.0-rc.5` is a prerelease for the offline v1 boundary, not a stable or final v1 release.
+- **Release candidate:** `v0.1.0-rc.6` is a prerelease for the offline v1 boundary, not a stable or final v1 release.
 - **Offline and local:** the CLI consumes only local stdin and does not fetch or authenticate external records.
 - **Cryptographic verification only:** successful verification covers the defined schema, payload hash, DID/key form, and detached Ed25519 signature. It does not authenticate the external source.
 
@@ -15,10 +15,11 @@ Every substantive description must preserve these four points:
 
 - Valley of Technocore is an unofficial, fully local Node.js CLI.
 - It requires Git and Node.js 20 or newer, has no runtime dependencies, and needs no `npm install` step.
-- It exposes two operations: `create-evidence` and `verify-evidence`.
+- The evidence CLI exposes two operations: `create-evidence` and `verify-evidence`.
 - `create-evidence` creates deterministic canonical evidence from explicitly supplied, contract-valid public input. Identical logical input produces byte-identical evidence.
 - `verify-evidence` checks the evidence schema, payload hash, supported DID/key form, and detached Ed25519 signature.
 - A valid signature proves only that the public key in `signer_did` verifies the exact decoded payload bytes.
+- One third-party public GitHub receipt, presented by its source as a Technocore signed-room receipt, has passed a one-sample offline mapping check; its supplied `room`, `sequence`, DID, nonce, text, and signature could be mapped into the v1 input and the detached signature verified. It does not authenticate the source or confirm the receipt against live room state.
 - `server_attributed_did` remains `observed-only`; no relationship with `signer_did` is inferred.
 - Verification output always has `authority: "none"`.
 - The CLI cannot determine whether supplied input is genuine, complete, or current. Independent source validation remains the user's responsibility.
@@ -37,16 +38,16 @@ Do not say or imply that:
 - `server_attributed_did` is cryptographically bound to `signer_did`;
 - the project provides wallets, keys, signing, token or reward logic, networking, servers, deployment, monitoring, production integration, or autonomous execution;
 - the CLI is available through npm, `npm install`, `npx`, or a global `valley-technocore` installation;
-- `v0.1.0-rc.5` is a stable or final v1 release.
+- `v0.1.0-rc.6` is a stable or final v1 release.
 
 Avoid the shorthand **“verified Technocore record”** or **“authentic record.”** Say exactly which cryptographic checks passed.
 
 ## Canonical references
 
 - Repository: <https://github.com/hubofvalley/Valley-of-Technocore>
-- Prerelease: <https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0-rc.5>
-- Version: `0.1.0-rc.5`
-- Commit: `57a3119bb0686bf914b8a89b72937c700d10b147`
+- Prerelease: <https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0-rc.6>
+- Version: `0.1.0-rc.6`
+- Commit: `cd179a731a30ac6d16b1bb93b9ac547a2f143d79`
 - Specification: [`v1-spec.md`](v1-spec.md)
 - Licence: [`../LICENSE`](../LICENSE)
 
