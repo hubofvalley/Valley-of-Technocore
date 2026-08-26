@@ -1,0 +1,19 @@
+{
+  "statement": {
+    "schema": "gv.valley-of-technocore.release-attestation/1",
+    "attestation_key_did": "did:key:z6MkjiuDrYh5Q1ck7WsvNDyLfLNLe763vaoAKhfN2JegDMQF",
+    "repository": "https://github.com/hubofvalley/Valley-of-Technocore",
+    "commit": "57a3119bb0686bf914b8a89b72937c700d10b147",
+    "tag": "v0.1.0-rc.5",
+    "digest": {
+      "kind": "artifact",
+      "sha256": "sha256:1e480b75f9c85580bde2d08a4153aae1585a9ffba02f34ace1f03f0afbfa896a"
+    },
+    "signed_at": "2026-08-26T10:16:26Z"
+  },
+  "signature": {
+    "algorithm": "Ed25519",
+    "encoding": "base64url",
+    "value": "l4N4gVRbgKRLTQjnhr2iHY99HGd1jLF7XxYmulxd45PH1hSDqK_tV2E1aYuJ2kNl5uKfd3GRo8aa1SkW3_yJAQ"
+  }
+}

@@ -6,7 +6,8 @@
   "license": "Apache-2.0",
   "type": "module",
   "bin": {
-    "valley-technocore": "bin/valley-technocore.js"
+    "valley-technocore": "bin/valley-technocore.js",
+    "valley-attestation": "bin/valley-attestation.js"
   },
   "scripts": {
     "test": "node --test"
