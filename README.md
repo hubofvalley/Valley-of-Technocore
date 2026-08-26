@@ -55,7 +55,7 @@ rm evidence.json evidence-tampered.json
 
 Use this toolkit to package already-supplied signed bytes in a deterministic JSON format, verify the included Ed25519 signature and payload hash offline, or demonstrate that a packaged file changed after creation.
 
-Compatibility with a real public Technocore record has not yet been demonstrated. The current flow uses only a public RFC 8032 fixture. The toolkit does not fetch, authenticate, or independently validate Technocore records or any other external source.
+One third-party public GitHub receipt, presented by its source as a Technocore signed-room receipt, has passed a one-sample offline mapping check: its published room, sequence, DID, nonce, text, and signature were mapped to this toolkit's input and the detached Ed25519 signature verified. See [the compatibility record](docs/technocore-receipt-compatibility.md). This is not an authenticity check: the toolkit did not fetch the room or independently validate the external source.
 
 A valid report cannot prove authenticity, identity, authorship, contribution, ownership, recognition, eligibility, rewards, repository control, or authority. It proves only that the public key in `signer_did` verifies the exact supplied payload bytes and that the recorded payload hash matches them. `server_attributed_did` remains observed attribution only; no relationship between the two DIDs is inferred.
 
