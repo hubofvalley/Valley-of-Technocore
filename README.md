@@ -13,6 +13,21 @@ Evidence proves only that the public key in `signer_did` signed the exact payloa
 
 See [the v1 specification](docs/v1-spec.md) for the complete contract.
 
+### Verify a release attestation
+
+The standalone `valley-attestation` command verifies the checked-in self-signed release attestation locally:
+
+```bash
+node ./bin/valley-attestation.js \
+  < fixtures/release-attestation-v1.json
+
+echo $?
+```
+
+Successful verification prints a canonical report with `signature_status` set to `valid`, `external_facts_status` set to `not-checked`, and `authority` set to `none`; `echo $?` then prints `0`. The verifier authenticates only the exact signed statement bytes against its public DID. It does not independently prove identity, authorship, contribution, ownership, repository control, source authenticity, external recognition, FLOP eligibility, rewards, or authority.
+
+See [the release-attestation v1 specification](docs/release-attestation-v1.md) for the exact schema, signing bytes, limitations, and exit codes.
+
 ## Clean-clone quick start
 
 Requirements: Git and Node.js 20 or newer. The project has no runtime dependencies, so no `npm install` step is needed.
@@ -103,4 +118,4 @@ Apache-2.0. See [LICENSE](LICENSE).
 
 ## Status
 
-`0.1.0-rc.5` is a release candidate for the offline v1 boundary above.
+`0.1.0-rc.6` is a release candidate that adds the standalone release-attestation verifier. The original evidence CLI and immutable `v0.1.0-rc.5` tag retain their existing semantics.

@@ -1,6 +1,6 @@
 # Self-Signed Release Attestation v1
 
-Status: design contract. This document does not change the Valley of Technocore v0.1.0-rc.5 CLI or its evidence semantics.
+Status: implemented contract. The standalone `valley-attestation` verifier implements this specification without changing the Valley of Technocore v0.1.0-rc.5 CLI or its evidence semantics.
 
 ## Purpose and limits
 
@@ -56,7 +56,14 @@ Signing and private-key custody are outside this repository. Valley of Technocor
 
 ## Offline verification contract
 
-A future standalone verifier accepts one UTF-8 attestation object on stdin and performs no network, filesystem, subprocess, environment, or clock access. It must not be added to the existing `valley-technocore` command surface for RC5.
+The standalone `valley-attestation` verifier accepts one UTF-8 attestation object on stdin and performs no network, filesystem, subprocess, environment, or clock access. It remains separate from the existing `valley-technocore` command surface for RC5.
+
+Run it from a source checkout:
+
+```bash
+node ./bin/valley-attestation.js \
+  < fixtures/release-attestation-v1.json
+```
 
 On processable input it emits one canonical report:
 
@@ -82,22 +89,16 @@ Exit codes:
 
 No output may say that a release, repository, commit, tag, artifact, identity, contribution, or external fact was verified.
 
-## RC5 binding and ceremony gates
+## RC5 binding and completed ceremony
 
-The first attestation is intended to bind:
+The checked-in attestation binds:
 
 - repository: `https://github.com/hubofvalley/Valley-of-Technocore`
 - commit: `57a3119bb0686bf914b8a89b72937c700d10b147`
 - tag: `v0.1.0-rc.5`
-- digest: SHA-256 of one explicitly selected release artifact
-- signer: a Grand Valley public Ed25519 `did:key` supplied through Sam's custody process
+- digest: `sha256:1e480b75f9c85580bde2d08a4153aae1585a9ffba02f34ace1f03f0afbfa896a`, covering the deterministic RC5 source archive
+- signer: `did:key:z6MkjiuDrYh5Q1ck7WsvNDyLfLNLe763vaoAKhfN2JegDMQF`
 
-Before implementation can receive a valid public fixture:
+The signing ceremony occurred outside this repository. The resulting public fixture is `fixtures/release-attestation-v1.json`; tests lock its exact RC5 binding, validate the signature, reject mutations and malformed inputs, and enforce the offline/no-side-effect boundary.
 
-1. Bertold approves the exact artifact bytes to hash.
-2. Sam supplies the public DID and performs the signing ceremony outside this repository.
-3. John independently reconstructs the canonical signing bytes and verifies the returned public signature.
-4. The verifier and fixed public fixture receive mutation, parser-limit, weak-key, environment-invariance, and no-side-effect tests.
-5. Oracle and Bertold review the implementation before any release or public claim.
-
-RC5 remains immutable. This attestation cannot relax `public-fact-lock.md` or become proof of contribution/work.
+RC5 remains immutable. This attestation cannot relax `public-fact-lock.md` or become proof of contribution/work, identity, eligibility, endorsement, or external recognition.
