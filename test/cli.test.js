@@ -89,6 +89,16 @@ test('rejects excessive JSON depth, string length, DID length, and invalid Ed255
   assert.throws(() => createEvidence({ ...validInput, signer_did: 'did:key:z6MkqRYqQiSgvMVa8mHoVXdYGrGJ5Z7kCqKxYS1a7nZKrX1R' }), /valid point/u);
 });
 
+test('rejects oversized integer tokens before BigInt conversion in both commands', () => {
+  const hugeInteger = '9'.repeat(500000);
+  const createText = JSON.stringify(validInput).replace('"sequence":0', `"sequence":${hugeInteger}`);
+  let result = cli('create-evidence', createText);
+  assert.equal(result.status, 2); assert.match(result.stderr, /integer token exceeds safe limit/u);
+  const verifyText = JSON.stringify(createEvidence(validInput)).replace('"sequence":0', `"sequence":${hugeInteger}`);
+  result = cli('verify-evidence', verifyText);
+  assert.equal(result.status, 2); assert.match(result.stderr, /integer token exceeds safe limit/u);
+});
+
 test('rejects BOM, nested duplicates, non-integer syntax, overflow, and weak keys', () => {
   assert.equal(cli('create-evidence', `\ufeff${JSON.stringify(validInput)}`).status, 2);
   assert.throws(() => parseStrictJson('{"x":{"value":1,"value":2}}'));
@@ -98,6 +108,8 @@ test('rejects BOM, nested duplicates, non-integer syntax, overflow, and weak key
   }
   const weakDid = 'did:key:z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDnP';
   assert.throws(() => createEvidence({ ...validInput, signer_did: weakDid }));
+  const unlistedLowOrderDid = 'did:key:z6MkeTG3bFFSLYVU7VqhgZxqr6YzpaGrQtFMh1uvqGy1vDpb';
+  assert.throws(() => createEvidence({ ...validInput, signer_did: unlistedLowOrderDid }), /weak Ed25519/u);
 });
 
 test('preserves maximum JCS interoperable integer without precision loss', () => {

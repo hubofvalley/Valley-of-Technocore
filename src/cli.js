@@ -67,9 +67,12 @@ export function parseStrictJson(text) {
         if (text[i++] !== ',') fail('expected comma');
       }
     }
-    const token = text.slice(i).match(/^-?(?:0|[1-9]\d*)/u)?.[0];
+    const integerToken = /-?(?:0|[1-9]\d{0,15})/uy;
+    integerToken.lastIndex = i;
+    const token = integerToken.exec(text)?.[0];
     if (token) {
       i += token.length;
+      if (/\d/u.test(text[i] ?? '')) fail('integer token exceeds safe limit');
       const integer = BigInt(token);
       return integer <= BigInt(Number.MAX_SAFE_INTEGER) && integer >= BigInt(Number.MIN_SAFE_INTEGER) ? Number(integer) : integer;
     }
@@ -149,6 +152,14 @@ function validateEd25519Encoding(key) {
   let x = modPow(x2, (p + 3n) / 8n, p);
   if (x * x % p !== x2) x = x * modPow(2n, (p - 1n) / 4n, p) % p;
   if (x * x % p !== x2 || (x === 0n && sign === 1)) fail('Ed25519 public key is not a valid point encoding');
+  if (Number(x & 1n) !== sign) x = p - x;
+  for (let round = 0; round < 3; round += 1) {
+    const xx = x * x % p; const yy = y * y % p; const xy2 = 2n * x * y % p;
+    const product = d * xx % p * yy % p;
+    x = xy2 * modPow(1n + product, p - 2n, p) % p;
+    y = (yy + xx) * modPow(1n - product, p - 2n, p) % p;
+  }
+  if (x === 0n && y === 1n) fail('weak Ed25519 key is unsupported');
 }
 
 function validateRoom(room) {

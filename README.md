@@ -22,4 +22,4 @@ Evidence is not trust, authorisation, eligibility, or a reward claim. See [the v
 
 ## Status
 
-`0.1.0-rc.3` implementation candidate. The contract, runtime, fixtures, and hostile-input tests are ready for red-team review; this is not a public release.
+`0.1.0-rc.4` implementation candidate. The contract, runtime, fixtures, and hostile-input tests are ready for red-team review; this is not a public release.
