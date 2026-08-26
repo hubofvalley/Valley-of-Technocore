@@ -2,7 +2,7 @@
 
 An unofficial, fully local toolkit for packaging supplied Ed25519-signed data as portable evidence and checking it for later tampering.
 
-An independent, unofficial tool by Grand Valley; it is not affiliated with Technocore.
+An independent, unofficial tool by Grand Valley.
 
 ## Try it from a clean clone
 
