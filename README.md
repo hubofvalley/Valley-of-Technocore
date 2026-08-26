@@ -1,40 +1,10 @@
 # Valley of Technocore
 
-An unofficial, fully local toolkit for producing and independently verifying portable evidence from supplied Ed25519-signed data.
+An unofficial, fully local toolkit for packaging supplied Ed25519-signed data as portable evidence and checking it for later tampering.
 
 Developed and maintained by Grand Valley.
 
-## Technocore compatibility status
-
-The current release demonstrates deterministic offline packaging and cryptographic tamper detection with a public RFC 8032 Ed25519 fixture. Compatibility with a real public Technocore record has not yet been demonstrated. The toolkit does not fetch, authenticate, or independently validate external records.
-
-## What it does
-
-v1 exposes two commands:
-
-- `create-evidence` produces deterministic `contribution-proof.json` from supplied public evidence.
-- `verify-evidence` validates the schema, payload hash, DID format, and detached Ed25519 signature.
-
-Evidence proves only that the public key in `signer_did` signed the exact payload bytes. Server attribution remains `observed-only`, no relationship between `server_attributed_did` and `signer_did` is inferred, and output authority is always `none`. Evidence does not establish identity, authorisation, ownership, reward eligibility, FLOP eligibility, or entitlement to any reward.
-
-See [the v1 specification](docs/v1-spec.md) for the complete contract.
-
-### Verify a release attestation
-
-The standalone `valley-attestation` command verifies the checked-in self-signed release attestation locally:
-
-```bash
-node ./bin/valley-attestation.js \
-  < fixtures/release-attestation-v1.json
-
-echo $?
-```
-
-Successful verification prints a canonical report with `signature_status` set to `valid`, `external_facts_status` set to `not-checked`, and `authority` set to `none`; `echo $?` then prints `0`. The verifier authenticates only the exact signed statement bytes against its public DID. It does not independently prove identity, authorship, contribution, ownership, repository control, source authenticity, external recognition, FLOP eligibility, rewards, or authority.
-
-See [the release-attestation v1 specification](docs/release-attestation-v1.md) for the exact schema, signing bytes, limitations, and exit codes.
-
-## Clean-clone quick start
+## Try it from a clean clone
 
 Requirements: Git and Node.js 20 or newer. The project has no runtime dependencies, so no `npm install` step is needed.
 
@@ -43,49 +13,62 @@ node --version
 git clone https://github.com/hubofvalley/Valley-of-Technocore.git
 cd Valley-of-Technocore
 npm test
-node ./bin/valley-technocore.js
-```
 
-The version check must print `v20.0.0` or newer. The final command intentionally prints local CLI usage and exits with code `2` because no command was supplied:
-
-```text
-usage: valley-technocore <create-evidence|verify-evidence>
-```
-
-### Create and verify evidence
-
-The checked-in input fixture is a public RFC 8032 Ed25519 test vector. It contains no secret or private key.
-
-```bash
 node ./bin/valley-technocore.js create-evidence \
   < fixtures/valid-input.json \
-  > contribution-proof.json
+  > evidence.json
 
 node ./bin/valley-technocore.js verify-evidence \
-  < contribution-proof.json
+  < evidence.json
 
 echo $?
 ```
 
-Successful verification prints one canonical JSON report to stdout; `echo $?` then prints `0`. Creating the evidence again from the same fixture produces byte-identical output:
+`node --version` must print `v20.0.0` or newer. The fixture is a public RFC 8032 Ed25519 test vector; it contains no secret or private key. Successful verification prints this report and `echo $?` prints `0`:
 
-```bash
-node ./bin/valley-technocore.js create-evidence \
-  < fixtures/valid-input.json \
-  > contribution-proof-again.json
-
-cmp contribution-proof.json contribution-proof-again.json
+```json
+{"authority":"none","did_status":"valid","payload_hash_status":"valid","schema_status":"valid","server_attribution_status":"observed-only","signature_status":"valid"}
 ```
 
-`cmp` prints nothing and exits `0` when the files are identical. To inspect the generated evidence:
+### See tamper detection fail safely
+
+Make a separate local copy with only its recorded payload hash changed, then verify it:
 
 ```bash
-node -e "process.stdout.write(JSON.stringify(JSON.parse(require('node:fs').readFileSync('contribution-proof.json', 'utf8')), null, 2) + '\n')"
+node -e "const fs = require('node:fs'); const evidence = JSON.parse(fs.readFileSync('evidence.json', 'utf8')); evidence.statement.payload_sha256 = 'sha256:' + '0'.repeat(64); fs.writeFileSync('evidence-tampered.json', JSON.stringify(evidence));"
+
+node ./bin/valley-technocore.js verify-evidence \
+  < evidence-tampered.json
+
+echo $?
 ```
 
-`contribution-proof.json` and `contribution-proof-again.json` are generated local files. Remove them when finished, or keep them outside commits.
+The report contains `"payload_hash_status":"invalid"`, and `echo $?` prints `3`. This changes only the new `evidence-tampered.json` file; the fixture and `evidence.json` remain untouched.
 
-## Exit codes
+Remove the generated files when finished, or keep them outside commits:
+
+```bash
+rm evidence.json evidence-tampered.json
+```
+
+## When this is useful
+
+Use this toolkit to package already-supplied signed bytes in a deterministic JSON format, verify the included Ed25519 signature and payload hash offline, or demonstrate that a packaged file changed after creation.
+
+Compatibility with a real public Technocore record has not yet been demonstrated. The current flow uses only a public RFC 8032 fixture. The toolkit does not fetch, authenticate, or independently validate Technocore records or any other external source.
+
+A valid report cannot prove authenticity, identity, authorship, contribution, ownership, recognition, eligibility, rewards, repository control, or authority. It proves only that the public key in `signer_did` verifies the exact supplied payload bytes and that the recorded payload hash matches them. `server_attributed_did` remains observed attribution only; no relationship between the two DIDs is inferred.
+
+## Evidence commands
+
+v1 exposes two evidence commands:
+
+- `create-evidence` writes deterministic evidence JSON to stdout from a supported object supplied on stdin.
+- `verify-evidence` checks the evidence schema, payload hash, Ed25519 `did:key`, and detached signature.
+
+See [the evidence v1 specification](docs/v1-spec.md) for the exact schema and validation contract.
+
+### Exit codes
 
 `create-evidence`:
 
@@ -101,27 +84,44 @@ node -e "process.stdout.write(JSON.stringify(JSON.parse(require('node:fs').readF
 
 Diagnostics go to stderr. Processable output is one canonical JSON object on stdout without a trailing newline.
 
+## Verify the release attestation
+
+The separate `valley-attestation` command verifies the checked-in self-signed release attestation locally:
+
+```bash
+node ./bin/valley-attestation.js \
+  < fixtures/release-attestation-v1.json
+
+echo $?
+```
+
+Successful verification prints a canonical report with `signature_status` set to `valid`, `external_facts_status` set to `not-checked`, and `authority` set to `none`; `echo $?` then prints `0`.
+
+This verifier authenticates only the exact signed statement bytes against its public DID. It does not independently prove identity, authorship, contribution, ownership, repository control, source authenticity, external recognition, FLOP eligibility, rewards, or authority.
+
+See [the release-attestation v1 specification](docs/release-attestation-v1.md) for the exact schema, signing bytes, limitations, and exit codes.
+
+## Offline and safety boundary
+
+The toolkit consumes only data explicitly supplied through local stdin. It cannot discover whether that input is genuine, complete, recognised, eligible, or current.
+
+It makes no network requests and has no URL fetching, wallet access, private-key handling or key generation, server process, subprocess execution, watcher, cron job, npm publishing flow, token logic, or deployment behaviour. `npm` is used here only to run the repository's local test script; the package remains private and is not published to npm.
+
+Generated or verified evidence grants no permission to act and carries no authority. Independent source validation remains the user's responsibility.
+
 ## Troubleshooting
 
 - `npm test` reports an unsupported Node.js version: install Node.js 20 or newer, confirm with `node --version`, then rerun the test.
 - Node reports `MODULE_NOT_FOUND`: run the CLI command from the cloned repository root and keep the leading `./` in `./bin/valley-technocore.js`.
-- CLI prints the usage line and exits `2`: supply exactly one command, either `create-evidence` or `verify-evidence`.
+- CLI prints the usage line and exits `2`: supply exactly one supported command.
 - CLI prints `error: ...` and exits `2`: input must be one UTF-8 JSON object of at most 1,048,576 bytes matching [the v1 specification](docs/v1-spec.md). Do not add duplicate or unknown fields, comments, trailing commas, padded base64url, or a BOM.
 - Verification exits `3`: inspect `payload_hash_status` and `signature_status` in stdout. The file was parsed, but its hash or detached signature did not verify.
 - Shell prompt appears on the same line as JSON: expected. Successful CLI output deliberately has no trailing newline; redirect it to a file or append a newline when viewing.
 
-## Offline and safety boundary
+## Status
 
-The toolkit consumes only data explicitly supplied through local stdin. It does not fetch Technocore records or URLs and cannot discover whether local input is genuine, complete, or current.
-
-It makes no network requests and has no wallet access, private-key handling or key generation, server process, subprocess execution, watcher, cron job, npm publishing flow, token logic, or deployment behaviour. `npm` is used here only to run the repository's local test script; the package remains private and is not published to npm.
-
-Do not treat generated or verified evidence as permission to act, proof of authority, or a reward/eligibility decision. Independent source validation remains the user's responsibility.
+`0.1.0-rc.6` adds the standalone release-attestation verifier. The original evidence CLI and immutable `v0.1.0-rc.5` tag retain their existing semantics.
 
 ## Licence
 
 Apache-2.0. See [LICENSE](LICENSE).
-
-## Status
-
-`0.1.0-rc.6` is a release candidate that adds the standalone release-attestation verifier. The original evidence CLI and immutable `v0.1.0-rc.5` tag retain their existing semantics.
