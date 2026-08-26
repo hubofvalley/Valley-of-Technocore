@@ -51,6 +51,8 @@ Remove the generated files when finished, or keep them outside commits:
 rm evidence.json evidence-tampered.json
 ```
 
+For exact testing commands, reproducibility limits, and result-source boundaries, see [Testing and reproducibility](docs/testing-and-reproducibility.md).
+
 ## When this is useful
 
 Use this toolkit to package already-supplied signed bytes in a deterministic JSON format, verify the included Ed25519 signature and payload hash offline, or demonstrate that a packaged file changed after creation.
