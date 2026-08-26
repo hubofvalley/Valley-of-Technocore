@@ -2,6 +2,8 @@
 
 An unofficial, fully local toolkit for packaging supplied Ed25519-signed data as portable evidence and checking it for later tampering.
 
+An independent, unofficial tool by Grand Valley; it is not affiliated with Technocore.
+
 ## Try it from a clean clone
 
 Requirements: Git and Node.js 20 or newer. The project has no runtime dependencies, so no `npm install` step is needed.
