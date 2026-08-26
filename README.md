@@ -2,8 +2,6 @@
 
 An unofficial, fully local toolkit for packaging supplied Ed25519-signed data as portable evidence and checking it for later tampering.
 
-Developed and maintained by Grand Valley.
-
 ## Try it from a clean clone
 
 Requirements: Git and Node.js 20 or newer. The project has no runtime dependencies, so no `npm install` step is needed.
@@ -97,7 +95,7 @@ echo $?
 
 Successful verification prints a canonical report with `signature_status` set to `valid`, `external_facts_status` set to `not-checked`, and `authority` set to `none`; `echo $?` then prints `0`.
 
-This verifier authenticates only the exact signed statement bytes against its public DID. It does not independently prove identity, authorship, contribution, ownership, repository control, source authenticity, external recognition, FLOP eligibility, rewards, or authority.
+This verifier verifies only the signature over the exact signed statement bytes using the public key encoded by the public DID. It does not independently prove identity, authorship, contribution, ownership, repository control, source authenticity, external recognition, FLOP eligibility, rewards, or authority.
 
 See [the release-attestation v1 specification](docs/release-attestation-v1.md) for the exact schema, signing bytes, limitations, and exit codes.
 
