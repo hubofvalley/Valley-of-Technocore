@@ -78,6 +78,9 @@ test('documented CLI commands remain discoverable from README', () => {
   assert.match(readme, /Default output, and explicit `--format json` output, is one canonical JSON object/u);
   assert.match(readme, /`--format human` is available only for verification and report commands/u);
   assert.match(readme, /Evidence creation and receipt normalisation always emit canonical JSON artefacts/u);
+  assert.ok(readme.includes('derive Technocore signing bytes as `room|nonce|swept-text`'));
+  assert.match(readme, /Selected output \(the human report also lists `non claims:`\)/u);
+  assert.match(readme, /`evidence verify`:.*has no `reasons` field/u);
 });
 
 test('machine reports preserve their allowed schema and claim boundaries', () => {

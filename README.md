@@ -20,10 +20,10 @@ An independent, unofficial tool by Grand Valley.
 
 Given a complete local input, the CLI can:
 
-- verify a detached Ed25519 signature over the exact supplied Technocore `room|nonce|text` bytes;
+- derive Technocore signing bytes as `room|nonce|swept-text`, then verify a detached Ed25519 signature over those derived bytes;
 - normalise one bounded local receipt export into the `technocore.msg.v1` profile;
 - package already-supplied signed bytes into deterministic evidence JSON; and
-- show that changing supplied bytes invalidates a detached signature.
+- show that changing input in a way that changes the derived signing bytes invalidates a detached signature.
 
 It cannot establish source authenticity, DID ownership, authorship beyond control of the supplied key, server inclusion, recency, replay protection, contribution, recognition, eligibility, rewards, or authority.
 
@@ -40,7 +40,7 @@ node ./bin/valley-technocore.js message verify --format human \
 printf 'exit: %s\n' "$?"
 ```
 
-Expected result:
+Selected output (the human report also lists `non claims:`):
 
 ```text
 profile: technocore.msg.v1
@@ -54,7 +54,7 @@ The checked-in sample maps one receipt published by a third party at an [immutab
 
 ### See a signature fail after one-byte tampering
 
-Keep the original sample intact and create a second local file whose text differs by one character:
+Keep the original sample intact and create a second local file whose text differs by one printable character, so its derived signing bytes change:
 
 ```bash
 node -e "const fs = require('node:fs'); const x = JSON.parse(fs.readFileSync('fixtures/technocore-msg-v1-gauntlet.json', 'utf8')); x.text += '!'; fs.writeFileSync('technocore-tampered.json', JSON.stringify(x));"
@@ -90,7 +90,7 @@ It also accepts canonical `technocore.msg.v1` input. It rejects unknown fields, 
 
 ## Read the result correctly
 
-`decision: verified` means the supplied public key verifies the exact supplied message bytes and detached signature. It does not make the message trusted or authoritative.
+`decision: verified` means the supplied public key verifies the detached signature over the derived Technocore signing bytes: `room|nonce|swept-text`. It does not make the message trusted or authoritative. A raw-text change that Technocore sweep removes may leave those signing bytes unchanged.
 
 The human report deliberately lists its non-claims, including `identity_not_established`, `source_authenticity_not_established`, and `server_inclusion_not_established`.
 
@@ -131,7 +131,8 @@ Generated evidence grants no permission to act. Independently validate any sourc
 - `node --version` is below 22: install Node.js 22 or newer, then retry.
 - `MODULE_NOT_FOUND`: run the command from the cloned repository root and keep the leading `./` in `./bin/valley-technocore.js`.
 - Exit `2`: check that the receipt has exactly one supported object shape, an allowed room and nonce, and an unpadded base64url detached signature.
-- Exit `3`: the input was readable but the supplied signature or payload hash did not verify. Inspect `signature status` and `reasons`.
+- Exit `3` from `message verify` or `receipt verify`: the input was readable but the detached signature did not verify. Inspect `signature status` and `reasons`.
+- Exit `3` from `evidence verify`: the input was readable but its payload hash or detached signature did not verify. Inspect `payload hash status` and `signature status`; this report has no `reasons` field.
 - JSON appears beside your shell prompt: expected. JSON reports deliberately have no trailing newline; redirect to a file or print a newline after the command.
 
 For the full reproducibility walkthrough, see [testing and reproducibility](docs/testing-and-reproducibility.md), the [terminal tutorial](docs/terminal-tutorial.md), and the [terminal video plan](docs/terminal-video-plan.md).
