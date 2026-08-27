@@ -53,6 +53,7 @@ rm evidence.json evidence-tampered.json
 
 For exact testing commands, reproducibility limits, and result-source boundaries, see [Testing and reproducibility](docs/testing-and-reproducibility.md).
 For a copy-paste valid-to-one-byte-tampered walkthrough, see the [terminal tutorial](docs/terminal-tutorial.md).
+For a concise narrated recording outline, see the [terminal video plan](docs/terminal-video-plan.md).
 
 ## When this is useful
 
@@ -146,7 +147,7 @@ Generated or verified evidence grants no permission to act and carries no author
 
 ## Status
 
-The checked-in package metadata remains `0.1.0-rc.6` and marks the package private. The published GitHub prerelease is `v0.1.0-rc.6`; it is not a stable `v0.1.0` release. Its attached tar archive is explicitly named `valley-of-technocore-v0.1.0-rc.5.tar`, so this repository does not describe it as a v0.1.0 artefact. See the [release-readiness facts](docs/release-readiness.md) and verify them again before any release action.
+This branch prepares package metadata as `0.1.0` while retaining `private: true`. GitHub currently has no stable `v0.1.0` tag or release; the latest published `v0.1.0*` release is the prerelease `v0.1.0-rc.6`. Its attached tar archive is explicitly named `valley-of-technocore-v0.1.0-rc.5.tar`, so this repository does not describe it as a stable v0.1.0 artefact. No stable release attestation is present. See the [release-readiness facts](docs/release-readiness.md) and [changelog](CHANGELOG.md); verify mutable release facts again before any release action.
 
 ## Licence
 
