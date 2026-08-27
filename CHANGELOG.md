@@ -14,4 +14,3 @@ any release-day attestation remain separate manual gates.
   boundaries.
 - Standalone offline verification of the checked-in release-attestation
   format.
-
