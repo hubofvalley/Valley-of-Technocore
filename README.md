@@ -146,7 +146,7 @@ Generated or verified evidence grants no permission to act and carries no author
 
 ## Status
 
-The checked-in package metadata remains `0.1.0-rc.6` and marks the package private. The published GitHub prerelease is `v0.1.0-rc.6`; it is not a stable `v0.1.0` release. Its attached tar archive is explicitly named `valley-of-technocore-v0.1.0-rc.5.tar`, so this repository does not describe it as a v0.1.0 artefact. See the [release-readiness facts](docs/release-readiness.md) and verify them again before any release action.
+This branch prepares package metadata as `0.1.0` while retaining `private: true`. GitHub currently has no stable `v0.1.0` tag or release; the latest published `v0.1.0*` release is the prerelease `v0.1.0-rc.6`. Its attached tar archive is explicitly named `valley-of-technocore-v0.1.0-rc.5.tar`, so this repository does not describe it as a stable v0.1.0 artefact. No stable release attestation is present. See the [release-readiness facts](docs/release-readiness.md) and [changelog](CHANGELOG.md); verify mutable release facts again before any release action.
 
 ## Licence
 
