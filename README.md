@@ -106,7 +106,7 @@ Expected result: the JSON report contains `"decision":"verified"` and `"signatur
 - `2` — malformed or unsupported profile input.
 - `3` — the input was processable, but its detached signature was invalid.
 
-Diagnostics go to stderr. Processable output is one canonical JSON object on stdout without a trailing newline.
+Diagnostics go to stderr. Default output, and explicit `--format json` output, is one canonical JSON object on stdout without a trailing newline. `--format human` is available only for verification and report commands. Evidence creation and receipt normalisation always emit canonical JSON artefacts.
 
 ## Verify the release attestation
 

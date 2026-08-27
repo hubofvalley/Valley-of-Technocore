@@ -75,6 +75,9 @@ test('documented CLI commands remain discoverable from README', () => {
   for (const command of ['create-evidence', 'verify-evidence', 'verify-technocore-message', 'valley-attestation']) {
     assert.match(readme, new RegExp(`\\b${command}\\b`, 'u'));
   }
+  assert.match(readme, /Default output, and explicit `--format json` output, is one canonical JSON object/u);
+  assert.match(readme, /`--format human` is available only for verification and report commands/u);
+  assert.match(readme, /Evidence creation and receipt normalisation always emit canonical JSON artefacts/u);
 });
 
 test('machine reports preserve their allowed schema and claim boundaries', () => {
