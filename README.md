@@ -53,17 +53,6 @@ rm evidence.json evidence-tampered.json
 
 For exact testing commands, reproducibility limits, and result-source boundaries, see [Testing and reproducibility](docs/testing-and-reproducibility.md).
 
-## Run local Actions
-
-The `valley-actions` product surface provides a loopback-only UI for creating, running, retrying, and inspecting bounded local Actions, plus a fixed **Verify & export proof receipt** workflow. It verifies supplied evidence, records per-step results, and exports a JSON or Markdown receipt through the browser.
-
-```bash
-mkdir -p "$PWD/.local-actions"
-node ./bin/valley-actions.js --state "$PWD/.local-actions/actions.json"
-```
-
-Open the printed `http://127.0.0.1:4173` URL. See the [Actions runbook](docs/actions.md) for the full flow, operation catalogue, state boundary, and limitations. Keep `.local-actions/` out of commits.
-
 ## When this is useful
 
 Use this toolkit to package already-supplied signed bytes in a deterministic JSON format, verify the included Ed25519 signature and payload hash offline, or demonstrate that a packaged file changed after creation.
@@ -116,9 +105,9 @@ See [the release-attestation v1 specification](docs/release-attestation-v1.md) f
 
 ## Offline and safety boundary
 
-The evidence and attestation commands consume only data explicitly supplied through local stdin. The separate Actions surface consumes only its local UI/API input and its caller-selected persisted state. Neither surface can discover whether supplied data is genuine, complete, recognised, eligible, or current.
+The toolkit consumes only data explicitly supplied through local stdin. It cannot discover whether that input is genuine, complete, recognised, eligible, or current.
 
-The evidence and attestation commands make no network requests, remain filesystem-free, and start no server or subprocess. The separate Actions surface starts an HTTP server bound only to `127.0.0.1`; it may create the selected state file's missing parent directories and writes only that local state file plus same-directory lock and temporary files used for atomic updates. Its fixed operation catalogue executes in-process: it has no shell, subprocess, outbound network, remote execution, credentials, private-key handling, cron, publishing, or deployment behaviour. `npm` is used here only to run the local test script; the package remains private and is not published to npm.
+It makes no network requests and has no URL fetching, wallet access, private-key handling or key generation, server process, subprocess execution, watcher, cron job, npm publishing flow, token logic, or deployment behaviour. `npm` is used here only to run the repository's local test script; the package remains private and is not published to npm.
 
 Generated or verified evidence grants no permission to act and carries no authority. Independent source validation remains the user's responsibility.
 
