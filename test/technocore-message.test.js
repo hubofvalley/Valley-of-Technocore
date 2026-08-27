@@ -45,6 +45,19 @@ test('verifies the pinned public Technocore Gauntlet receipt', () => {
   assert.match(result.stdout, /"decision":"verified"/u);
 });
 
+test('matches a fixed upstream-style signing-byte vector without reusing the implementation sweep', () => {
+  const rawText = ' \nhello\u200dworld\u2028 ';
+  const expectedBytes = Buffer.from('lobby|9007199254740999999|hello world', 'utf8');
+  assert.equal(expectedBytes.toString('hex'), '6c6f6262797c393030373139393235343734303939393939397c68656c6c6f20776f726c64');
+  const input = {
+    schema: 'technocore.msg.v1', room: 'lobby', did: DID, nonce: '9007199254740999999', text: rawText,
+    signature_b64u: sign(null, expectedBytes, PRIVATE_KEY).toString('base64url')
+  };
+  const result = cli(JSON.stringify(input));
+  assert.equal(result.status, 0);
+  assert.equal(JSON.parse(result.stdout).decision, 'verified');
+});
+
 test('signs and verifies exactly the text after Technocore sweep and trim', () => {
   const raw = ' \nhello\u200dworld\u2028 ';
   assert.equal(sweepText(raw), 'hello world');

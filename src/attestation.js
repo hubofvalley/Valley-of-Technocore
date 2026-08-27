@@ -4,6 +4,7 @@ const SCHEMA = 'gv.valley-of-technocore.release-attestation/1';
 const MAX_INPUT_BYTES = 1024 * 1024;
 const BASE58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const B64U = /^(?:[A-Za-z0-9_-]{4})*(?:[A-Za-z0-9_-]{2,3})?$/;
+const USAGE = 'usage: valley-attestation < attestation.json\n';
 const WEAK_KEYS = new Set([
   '0000000000000000000000000000000000000000000000000000000000000000',
   '0100000000000000000000000000000000000000000000000000000000000000',
@@ -194,7 +195,8 @@ async function readInput(stream) {
 }
 
 export async function runAttestation(args, stdin, stdout, stderr) {
-  if (args.length !== 0) { stderr.write('usage: valley-attestation\n'); return 2; }
+  if (args.length === 1 && ['--help', '-h'].includes(args[0])) { stdout.write(USAGE); return 0; }
+  if (args.length !== 0) { stderr.write(USAGE); return 2; }
   try {
     const report = verifyAttestation(await readInput(stdin));
     stdout.write(canonicalJson(report));

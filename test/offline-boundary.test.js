@@ -1,12 +1,14 @@
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 
 const CLI = new URL('../bin/valley-technocore.js', import.meta.url);
 const ATTESTATION_CLI = new URL('../bin/valley-attestation.js', import.meta.url);
+const ROOT_DIR = dirname(fileURLToPath(new URL('../package.json', import.meta.url)));
 const INPUT = readFileSync(new URL('../fixtures/valid-input.json', import.meta.url), 'utf8');
 const ATTESTATION = readFileSync(new URL('../fixtures/release-attestation-v1.json', import.meta.url), 'utf8');
 const TECHNOCORE_MESSAGE = readFileSync(new URL('../fixtures/technocore-msg-v1-gauntlet.json', import.meta.url), 'utf8');
@@ -24,14 +26,44 @@ function runInEmptyDirectory(env, command = 'create-evidence', input = INPUT) {
   }
 }
 
-test('runtime source has no network, filesystem, subprocess, or environment access', () => {
-  const runtime = [
-    readFileSync(new URL('../src/cli.js', import.meta.url), 'utf8'),
-    readFileSync(new URL('../src/technocore-message.js', import.meta.url), 'utf8'),
-    readFileSync(CLI, 'utf8')
-  ].join('\n');
-  assert.doesNotMatch(runtime, /node:(?:http|https|net|tls|dgram|dns|fs|child_process)/u);
-  assert.doesNotMatch(runtime, /\b(?:fetch|WebSocket|XMLHttpRequest)\s*\(|process\.env|process\.cwd\s*\(/u);
+function reachableRuntimeFiles(entrypoints) {
+  const found = new Set();
+  const visit = (file) => {
+    const path = resolve(file);
+    if (found.has(path)) return;
+    found.add(path);
+    const source = readFileSync(path, 'utf8');
+    for (const match of source.matchAll(/\bimport\s+(?:[^'";]+?\s+from\s+)?['"]([^'"]+)['"]/gu)) {
+      const specifier = match[1];
+      if (specifier.startsWith('.')) visit(resolve(dirname(path), specifier));
+    }
+  };
+  for (const entrypoint of entrypoints) visit(fileURLToPath(entrypoint));
+  return [...found].sort();
+}
+
+test('every runtime module reachable from either entrypoint stays capability-bounded', () => {
+  const runtimeFiles = reachableRuntimeFiles([CLI, ATTESTATION_CLI]);
+  assert.deepEqual(runtimeFiles.map((file) => file.replace(`${ROOT_DIR}/`, '')).sort(), [
+    'bin/valley-attestation.js', 'bin/valley-technocore.js', 'src/attestation.js', 'src/cli.js', 'src/technocore-message.js'
+  ]);
+  const forbiddenBuiltins = /node:(?:fs(?:\/promises)?|http2?|net|tls|dgram|dns|child_process|cluster|worker_threads|module|vm|v8)/u;
+  const forbiddenGlobals = /\b(?:fetch|WebSocket|XMLHttpRequest|EventSource)\s*\(/u;
+  const forbiddenCrypto = /\b(?:createPrivateKey|createSecretKey|generateKey(?:Pair)?|sign|diffieHellman|createECDH)\s*\(/u;
+  for (const file of runtimeFiles) {
+    const source = readFileSync(file, 'utf8');
+    assert.doesNotMatch(source, forbiddenBuiltins, file);
+    assert.doesNotMatch(source, forbiddenGlobals, file);
+    assert.doesNotMatch(source, /\b(?:require|import)\s*\(/u, file);
+    assert.doesNotMatch(source, forbiddenCrypto, file);
+    for (const access of source.matchAll(/\bprocess\.([A-Za-z_$][\w$]*)/gu)) {
+      assert.ok(['argv', 'exitCode', 'stdin', 'stdout', 'stderr'].includes(access[1]), `${file} accesses forbidden process.${access[1]}`);
+    }
+    for (const match of source.matchAll(/\bimport\s+(?:[^'";]+?\s+from\s+)?['"]([^'"]+)['"]/gu)) {
+      const specifier = match[1];
+      assert.ok(specifier.startsWith('.') || specifier === 'node:crypto', `${file} imports unsupported runtime module ${specifier}`);
+    }
+  }
 });
 
 test('hostile environment cannot affect output and runtime writes no files', () => {

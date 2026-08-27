@@ -19,6 +19,10 @@ const WEAK_KEYS = new Set([
   'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39cc3c0e0d174c5e44377a'
 ]);
 
+const ROOT_USAGE = 'usage: valley-technocore <create-evidence|verify-evidence|verify-technocore-message>\n';
+const CREATE_USAGE = 'usage: valley-technocore create-evidence < input.json\n';
+const VERIFY_USAGE = 'usage: valley-technocore verify-evidence < evidence.json\n';
+
 export class InputError extends Error {}
 
 function fail(message) {
@@ -255,7 +259,12 @@ async function readInput(stream) {
 }
 
 export async function run(args, stdin, stdout, stderr) {
-  if (args.length !== 1 || !['create-evidence', 'verify-evidence'].includes(args[0])) { stderr.write('usage: valley-technocore <create-evidence|verify-evidence>\n'); return 2; }
+  if (args.length === 1 && ['--help', '-h'].includes(args[0])) { stdout.write(ROOT_USAGE); return 0; }
+  if (args.length === 2 && ['--help', '-h'].includes(args[1]) && ['create-evidence', 'verify-evidence'].includes(args[0])) {
+    stdout.write(args[0] === 'create-evidence' ? CREATE_USAGE : VERIFY_USAGE);
+    return 0;
+  }
+  if (args.length !== 1 || !['create-evidence', 'verify-evidence'].includes(args[0])) { stderr.write(ROOT_USAGE); return 2; }
   try {
     const input = await readInput(stdin);
     const output = args[0] === 'create-evidence' ? createEvidence(input) : verifyEvidence(input);
