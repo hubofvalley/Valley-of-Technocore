@@ -1,4 +1,5 @@
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
+import { canonicalJson, parseFormatArgs, writeReport } from './format.js';
 
 const SCHEMA = 'gv.valley-of-technocore.evidence/1';
 const MAX_INPUT_BYTES = 1024 * 1024;
@@ -19,9 +20,20 @@ const WEAK_KEYS = new Set([
   'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39cc3c0e0d174c5e44377a'
 ]);
 
-const ROOT_USAGE = 'usage: valley-technocore <create-evidence|verify-evidence|verify-technocore-message>\n';
-const CREATE_USAGE = 'usage: valley-technocore create-evidence < input.json\n';
-const VERIFY_USAGE = 'usage: valley-technocore verify-evidence < evidence.json\n';
+const ROOT_USAGE = `usage: valley-technocore <command> [--format json|human]
+
+Commands:
+  evidence create       package supplied signed bytes as evidence
+  evidence verify       verify packaged evidence
+  message verify        verify a technocore.msg.v1 message
+  receipt normalize     normalise one supported local receipt export
+  receipt verify        normalise and verify one supported local receipt export
+
+Legacy aliases: create-evidence, verify-evidence, verify-technocore-message
+Run valley-technocore <command> --help for command details.
+`;
+const CREATE_USAGE = 'usage: valley-technocore create-evidence [--format json|human] < input.json\n';
+const VERIFY_USAGE = 'usage: valley-technocore verify-evidence [--format json|human] < evidence.json\n';
 
 export class InputError extends Error {}
 
@@ -242,14 +254,6 @@ export function verifyEvidence(evidence) {
   };
 }
 
-function canonicalJson(value) {
-  if (value === null || typeof value === 'boolean' || typeof value === 'number') return JSON.stringify(value);
-  if (typeof value === 'bigint') return value.toString(10);
-  if (typeof value === 'string') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
-}
-
 async function readInput(stream) {
   const chunks = []; let size = 0;
   for await (const chunk of stream) { size += chunk.length; if (size > MAX_INPUT_BYTES) fail('input exceeds 1 MiB'); chunks.push(chunk); }
@@ -264,12 +268,13 @@ export async function run(args, stdin, stdout, stderr) {
     stdout.write(args[0] === 'create-evidence' ? CREATE_USAGE : VERIFY_USAGE);
     return 0;
   }
-  if (args.length !== 1 || !['create-evidence', 'verify-evidence'].includes(args[0])) { stderr.write(ROOT_USAGE); return 2; }
+  const command = args[0]; const formatArgs = parseFormatArgs(args.slice(1));
+  if (!['create-evidence', 'verify-evidence'].includes(command) || !formatArgs) { stderr.write(`error: unknown command or option\n${ROOT_USAGE}`); return 2; }
   try {
     const input = await readInput(stdin);
-    const output = args[0] === 'create-evidence' ? createEvidence(input) : verifyEvidence(input);
-    stdout.write(canonicalJson(output));
-    if (args[0] === 'verify-evidence' && (output.payload_hash_status !== 'valid' || output.signature_status !== 'valid')) return 3;
+    const output = command === 'create-evidence' ? createEvidence(input) : verifyEvidence(input);
+    writeReport(stdout, output, formatArgs.format);
+    if (command === 'verify-evidence' && (output.payload_hash_status !== 'valid' || output.signature_status !== 'valid')) return 3;
     return 0;
   } catch (error) {
     stderr.write(`error: ${error instanceof InputError ? error.message : 'internal failure'}\n`);

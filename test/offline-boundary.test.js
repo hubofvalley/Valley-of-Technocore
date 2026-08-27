@@ -33,7 +33,7 @@ function reachableRuntimeFiles(entrypoints) {
     if (found.has(path)) return;
     found.add(path);
     const source = readFileSync(path, 'utf8');
-    for (const match of source.matchAll(/\bimport\s+(?:[^'";]+?\s+from\s+)?['"]([^'"]+)['"]/gu)) {
+    for (const match of source.matchAll(/\b(?:import|export)\s+(?:[^'";]+?\s+from\s+)?['"]([^'"]+)['"]/gu)) {
       const specifier = match[1];
       if (specifier.startsWith('.')) visit(resolve(dirname(path), specifier));
     }
@@ -42,27 +42,45 @@ function reachableRuntimeFiles(entrypoints) {
   return [...found].sort();
 }
 
+function auditRuntimeSource(source, label) {
+  const forbiddenBuiltins = /node:(?:fs(?:\/promises)?|http2?|net|tls|dgram|dns|child_process|cluster|worker_threads|module|vm|v8)/u;
+  const forbiddenGlobals = /\b(?:fetch|WebSocket|XMLHttpRequest|EventSource)\s*\(/u;
+  const forbiddenCryptoNames = new Set(['createPrivateKey', 'createSecretKey', 'generateKey', 'generateKeyPair', 'sign', 'diffieHellman', 'createECDH']);
+  assert.doesNotMatch(source, forbiddenBuiltins, label);
+  assert.doesNotMatch(source, forbiddenGlobals, label);
+  assert.doesNotMatch(source, /\b(?:require|import)\s*\(/u, label);
+  for (const match of source.matchAll(/\b(?:import|export)\s+([^'";]+?)\s+from\s+['"]([^'"]+)['"]/gu)) {
+    const [, clause, specifier] = match;
+    assert.ok(specifier.startsWith('.') || specifier === 'node:crypto', `${label} imports unsupported runtime module ${specifier}`);
+    if (specifier === 'node:crypto') {
+      assert.doesNotMatch(clause, /^\s*(?:\*|[A-Za-z_$])/u, `${label} must use named node:crypto imports`);
+      const named = clause.match(/\{([^}]*)\}/u)?.[1] ?? '';
+      for (const binding of named.split(',').map((part) => part.trim()).filter(Boolean)) {
+        const imported = binding.split(/\s+as\s+/u)[0].trim();
+        assert.ok(!forbiddenCryptoNames.has(imported), `${label} imports forbidden node:crypto API ${imported}`);
+      }
+    }
+  }
+  const withoutAllowedProcess = source.replace(/\bprocess\.(?:argv|exitCode|stdin|stdout|stderr)\b/gu, '');
+  assert.doesNotMatch(withoutAllowedProcess, /\bprocess\b/u, `${label} accesses process outside the CLI stream boundary`);
+}
+
 test('every runtime module reachable from either entrypoint stays capability-bounded', () => {
   const runtimeFiles = reachableRuntimeFiles([CLI, ATTESTATION_CLI]);
   assert.deepEqual(runtimeFiles.map((file) => file.replace(`${ROOT_DIR}/`, '')).sort(), [
-    'bin/valley-attestation.js', 'bin/valley-technocore.js', 'src/attestation.js', 'src/cli.js', 'src/technocore-message.js'
+    'bin/valley-attestation.js', 'bin/valley-technocore.js', 'src/attestation.js', 'src/cli.js', 'src/format.js',
+    'src/receipt-cli.js', 'src/receipt.js', 'src/technocore-message.js'
   ]);
-  const forbiddenBuiltins = /node:(?:fs(?:\/promises)?|http2?|net|tls|dgram|dns|child_process|cluster|worker_threads|module|vm|v8)/u;
-  const forbiddenGlobals = /\b(?:fetch|WebSocket|XMLHttpRequest|EventSource)\s*\(/u;
-  const forbiddenCrypto = /\b(?:createPrivateKey|createSecretKey|generateKey(?:Pair)?|sign|diffieHellman|createECDH)\s*\(/u;
   for (const file of runtimeFiles) {
     const source = readFileSync(file, 'utf8');
-    assert.doesNotMatch(source, forbiddenBuiltins, file);
-    assert.doesNotMatch(source, forbiddenGlobals, file);
-    assert.doesNotMatch(source, /\b(?:require|import)\s*\(/u, file);
-    assert.doesNotMatch(source, forbiddenCrypto, file);
-    for (const access of source.matchAll(/\bprocess\.([A-Za-z_$][\w$]*)/gu)) {
-      assert.ok(['argv', 'exitCode', 'stdin', 'stdout', 'stderr'].includes(access[1]), `${file} accesses forbidden process.${access[1]}`);
-    }
-    for (const match of source.matchAll(/\bimport\s+(?:[^'";]+?\s+from\s+)?['"]([^'"]+)['"]/gu)) {
-      const specifier = match[1];
-      assert.ok(specifier.startsWith('.') || specifier === 'node:crypto', `${file} imports unsupported runtime module ${specifier}`);
-    }
+    auditRuntimeSource(source, file);
+  }
+});
+
+test('capability scanner catches re-exports, crypto aliases, and indirect process access', () => {
+  assert.throws(() => auditRuntimeSource("export { x } from './hidden.js';\nimport { sign as harmless } from 'node:crypto';", 'alias'));
+  for (const source of ['globalThis.process.env', 'const { env } = process;', 'const p = process; p.env']) {
+    assert.throws(() => auditRuntimeSource(source, 'process alias'));
   }
 });
 
@@ -91,7 +109,7 @@ test('verify-evidence is environment-invariant and writes no files', () => {
 test('package has zero runtime dependencies and only declared runtime files', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(pkg.dependencies, undefined); assert.equal(pkg.optionalDependencies, undefined);
-  assert.deepEqual(readdirSync(new URL('../src', import.meta.url)).sort(), ['attestation.js', 'cli.js', 'technocore-message.js']);
+  assert.deepEqual(readdirSync(new URL('../src', import.meta.url)).sort(), ['attestation.js', 'cli.js', 'format.js', 'receipt-cli.js', 'receipt.js', 'technocore-message.js']);
   assert.deepEqual(readdirSync(new URL('../bin', import.meta.url)).sort(), ['valley-attestation.js', 'valley-technocore.js']);
 });
 
