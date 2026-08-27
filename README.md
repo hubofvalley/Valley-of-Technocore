@@ -70,6 +70,8 @@ v1 exposes two evidence commands:
 
 See [the evidence v1 specification](docs/v1-spec.md) for the exact schema and validation contract.
 
+The CLI also provides a grouped command hierarchy, optional human-readable reports, and bounded normalisation for one local receipt export at a time. See [CLI and local receipt workflow](docs/cli-and-local-receipts.md). Existing command names and default JSON reports remain supported.
+
 ## Verify a supplied Technocore signed message
 
 The stateless `technocore.msg.v1` profile verifies the exact byte format used by the pinned upstream Technocore implementation. Think of it as checking a letter's seal: it confirms that the supplied message matches the supplied signature and public key. It does not identify who controls the key or prove that a server included the message. It also provides no authority, eligibility decision, or replay protection.

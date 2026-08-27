@@ -1,4 +1,5 @@
 import { InputError, parseStrictJson, verifyDidKeySignature } from './cli.js';
+import { parseFormatArgs, writeReport } from './format.js';
 
 const PROFILE = 'technocore.msg.v1';
 const MAX_INPUT_BYTES = 1024 * 1024;
@@ -35,13 +36,6 @@ function validateMessage(input) {
   return text;
 }
 
-function canonicalJson(value) {
-  if (Array.isArray(value)) return `[${value.map(canonicalJson).join(',')}]`;
-  if (typeof value === 'string') return JSON.stringify(value);
-  if (!value || typeof value !== 'object') fail('unsupported report value');
-  return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(',')}}`;
-}
-
 const NON_CLAIMS = [
   'identity_not_established',
   'authorship_beyond_key_control_not_established',
@@ -73,10 +67,11 @@ async function readInput(stream) {
 
 export async function runTechnocoreMessage(args, stdin, stdout, stderr) {
   if (args.length === 1 && ['--help', '-h'].includes(args[0])) { stdout.write(USAGE); return 0; }
-  if (args.length !== 0) { stderr.write('usage: valley-technocore verify-technocore-message\n'); return 2; }
+  const formatArgs = parseFormatArgs(args);
+  if (!formatArgs) { stderr.write('error: unknown option\nusage: valley-technocore message verify [--format json|human]\n'); return 2; }
   try {
     const report = verifyTechnocoreMessage(await readInput(stdin));
-    stdout.write(canonicalJson(report));
+    writeReport(stdout, report, formatArgs.format);
     return report.decision === 'verified' ? 0 : 3;
   } catch (error) {
     stderr.write(`error: ${error instanceof InputError ? error.message : 'internal failure'}\n`);
