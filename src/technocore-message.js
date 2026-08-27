@@ -6,6 +6,7 @@ const MAX_TEXT_CHARS = 4096;
 const INPUT_KEYS = ['schema', 'room', 'did', 'nonce', 'text', 'signature_b64u'];
 const NON_CATEGORIES = /[\p{Cc}\p{Cf}\p{Cs}\p{Co}\p{Zl}\p{Zp}]/gu;
 const STRIP = /^\p{White_Space}+|\p{White_Space}+$/gu;
+const USAGE = 'usage: valley-technocore verify-technocore-message < message.json\nrequired fields: schema, room, did, nonce, text, signature_b64u\n';
 
 function fail(message) { throw new InputError(message); }
 
@@ -71,6 +72,7 @@ async function readInput(stream) {
 }
 
 export async function runTechnocoreMessage(args, stdin, stdout, stderr) {
+  if (args.length === 1 && ['--help', '-h'].includes(args[0])) { stdout.write(USAGE); return 0; }
   if (args.length !== 0) { stderr.write('usage: valley-technocore verify-technocore-message\n'); return 2; }
   try {
     const report = verifyTechnocoreMessage(await readInput(stdin));
