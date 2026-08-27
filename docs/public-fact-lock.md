@@ -14,7 +14,7 @@ Every substantive description must preserve these four points:
 ## Allowed claims
 
 - Valley of Technocore is an unofficial, fully local Node.js CLI.
-- It requires Git and Node.js 20 or newer, has no runtime dependencies, and needs no `npm install` step.
+- It requires Git and Node.js 22 or newer, has no runtime dependencies, and needs no `npm install` step.
 - The evidence CLI exposes two operations: `create-evidence` and `verify-evidence`.
 - `create-evidence` creates deterministic canonical evidence from explicitly supplied, contract-valid public input. Identical logical input produces byte-identical evidence.
 - `verify-evidence` checks the evidence schema, payload hash, supported DID/key form, and detached Ed25519 signature.

@@ -9,7 +9,7 @@ None of these checks establishes Technocore or FLOP authenticity, affiliation, r
 Use a clean directory with:
 
 - Git;
-- Node.js 20 or newer, including `npm`; and
+- Node.js 22 or newer, including `npm`; and
 - a POSIX-compatible shell with `cmp`, `rm`, and `test` (for example, Linux, macOS, WSL, or Git Bash).
 
 The package has no runtime dependencies, so there is no `npm install` step. Network access is needed only to clone the repositories. The toolkit commands themselves consume local standard input and make no network requests.
@@ -23,7 +23,7 @@ node --version
 git rev-parse HEAD
 ```
 
-`node --version` must print `v20.0.0` or newer. Record the commit from `git rev-parse HEAD` with any result you publish.
+`node --version` must print `v22.0.0` or newer. Record the commit from `git rev-parse HEAD` with any result you publish.
 
 ## Run the repository test suite
 
@@ -199,7 +199,7 @@ This verifies the strict attestation schema, public DID form, canonical signing 
 | Evidence class | What a reader can inspect or reproduce | What it does not establish |
 | --- | --- | --- |
 | Locally observed | Run `npm test`; create and verify `evidence.json`; compare two outputs; run the tamper check; verify the checked-in release attestation; record the local commit, Node.js version, OS, output, and exit code. | Results on another checkout or environment, external facts, or source validity. |
-| CI-recorded | Inspect the public [Test workflow runs](https://github.com/hubofvalley/Valley-of-Technocore/actions/workflows/test.yml) and open the run for the pull request under review. A `pull_request` run tests GitHub's generated merge result and records the associated pull request head SHA. The workflow installs Node.js 20 and runs `npm test`. | A local run, untested environments, or any claim outside the test suite. A green badge is not a source-authenticity check. |
+| CI-recorded | Inspect the public [Node CI workflow runs](https://github.com/hubofvalley/Valley-of-Technocore/actions/workflows/test.yml) and open the run for the pull request under review. A `pull_request` run tests GitHub's generated merge result and records the associated pull request head SHA. The workflow runs `npm test` on Node.js 22 and 24. | A local run, untested environments, or any claim outside the test suite. A green badge is not a source-authenticity check. |
 | Source-provided | Check out the immutable third-party commit, inspect its receipt fields, run the documented mapping, and verify the supplied signature locally. | Authenticity, completeness, live Technocore state, affiliation, identity, contribution, recognition, eligibility, rewards, or authority. |
 
 For an independently reviewable result, publish the exact commit SHA, `node --version`, operating system, commands run, stdout, stderr, and exit codes. Link a CI run only when its recorded head SHA matches the commit being discussed. Keep source-provided statements labelled as source-provided rather than converting them into toolkit findings.

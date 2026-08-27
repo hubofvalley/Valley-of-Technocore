@@ -6,7 +6,7 @@ An independent, unofficial tool by Grand Valley.
 
 ## Try it from a clean clone
 
-Requirements: Git and Node.js 20 or newer. The project has no runtime dependencies, so no `npm install` step is needed.
+Requirements: Git and Node.js 22 or newer. The project has no runtime dependencies, so no `npm install` step is needed.
 
 ```bash
 node --version
@@ -24,7 +24,7 @@ node ./bin/valley-technocore.js verify-evidence \
 echo $?
 ```
 
-`node --version` must print `v20.0.0` or newer. The fixture is a public RFC 8032 Ed25519 test vector; it contains no secret or private key. Successful verification prints this report and `echo $?` prints `0`:
+`node --version` must print `v22.0.0` or newer. The fixture is a public RFC 8032 Ed25519 test vector; it contains no secret or private key. Successful verification prints this report and `echo $?` prints `0`:
 
 ```json
 {"authority":"none","did_status":"valid","payload_hash_status":"valid","schema_status":"valid","server_attribution_status":"observed-only","signature_status":"valid"}
@@ -113,7 +113,7 @@ Generated or verified evidence grants no permission to act and carries no author
 
 ## Troubleshooting
 
-- `npm test` reports an unsupported Node.js version: install Node.js 20 or newer, confirm with `node --version`, then rerun the test.
+- `npm test` reports an unsupported Node.js version: install Node.js 22 or newer, confirm with `node --version`, then rerun the test.
 - Node reports `MODULE_NOT_FOUND`: run the CLI command from the cloned repository root and keep the leading `./` in `./bin/valley-technocore.js`.
 - CLI prints the usage line and exits `2`: supply exactly one supported command.
 - CLI prints `error: ...` and exits `2`: input must be one UTF-8 JSON object of at most 1,048,576 bytes matching [the v1 specification](docs/v1-spec.md). Do not add duplicate or unknown fields, comments, trailing commas, padded base64url, or a BOM.
