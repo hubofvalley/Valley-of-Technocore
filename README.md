@@ -53,6 +53,7 @@ rm evidence.json evidence-tampered.json
 
 For exact testing commands, reproducibility limits, and result-source boundaries, see [Testing and reproducibility](docs/testing-and-reproducibility.md).
 For a copy-paste valid-to-one-byte-tampered walkthrough, see the [terminal tutorial](docs/terminal-tutorial.md).
+For a concise narrated recording outline, see the [terminal video plan](docs/terminal-video-plan.md).
 
 ## When this is useful
 
