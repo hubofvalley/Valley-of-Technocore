@@ -16,7 +16,9 @@ export function loadState(path) {
   validateStatePath(path); if (!existsSync(path)) return newState(); assertRegularBounded(path);
   const bytes = readFileSync(path); if (bytes.length > MAX_STATE_BYTES) throw new ActionsInputError('state exceeds 8 MiB');
   const text = bytes.toString('utf8'); if (!Buffer.from(text, 'utf8').equals(bytes)) throw new ActionsInputError('state must be UTF-8');
-  let state; try { state = JSON.parse(text); } catch { throw new ActionsInputError('state is not valid JSON'); } return validateState(state);
+  let state; try { state = JSON.parse(text); } catch { throw new ActionsInputError('state is not valid JSON'); }
+  if (state?.schema === 'gv.valley-of-technocore.actions/1' && Array.isArray(state.actions) && Array.isArray(state.runs)) state = { schema: 'gv.valley-of-technocore.actions/2', actions: state.actions, runs: state.runs, workflow_runs: [] };
+  return validateState(state);
 }
 
 function acquireLock(lockPath) {

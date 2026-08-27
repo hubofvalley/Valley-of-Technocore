@@ -1,6 +1,6 @@
 # Local Actions MVP
 
-Status: local MVP. This is an Actions capability, not a multi-step workflow engine.
+Status: local MVP. It includes one fixed, two-step proof workflow; it is not a general workflow engine.
 
 ## Start the product surface
 
@@ -23,6 +23,17 @@ The server binds only to `127.0.0.1` and prints its local URL. Stop it with `Ctr
 5. Inspect the Action's newest-first run history.
 6. A failed run exposes **Retry failed run**. Retry creates a new run with the same inputs and a `retry_of` link; it never overwrites the original run.
 
+## Proof workflow
+
+The built-in **Verify & export proof receipt** workflow is the intended FLOP-facing path:
+
+1. Supply a short receipt label and one evidence JSON object.
+2. It verifies the evidence as step one. Invalid or unsupported evidence stops the run there.
+3. A valid result formats a receipt as step two, with per-step status and output retained in run history. The receipt includes the SHA-256 hash of the exact submitted evidence string, so it remains tied to the evidence bytes it verified.
+4. Export the completed receipt as JSON or Markdown. Export uses a browser download; the server does not choose or write an export path.
+
+Workflow definitions are fixed and allowlisted. A failed workflow can be re-run with the same input, producing a new run linked by `retry_of`.
+
 ## Allowlisted operations
 
 | Operation | Inputs | Result |
@@ -44,4 +55,4 @@ This is not a sandbox, durable job queue, or tamper-evident audit log. A process
 
 ## Explicit non-features
 
-No multi-step workflows, schedules, triggers, branching, editing, deletion, plugins, arbitrary commands, action-selected filesystem operations, outbound networking, remote workers, accounts, credentials, sharing, deployment, or public Actions. The Actions service itself writes only its caller-selected local state file and same-directory lock/temporary files.
+No generic workflow builder, schedules, triggers, branching, editing, deletion, plugins, arbitrary commands, action-selected filesystem operations, outbound networking, remote workers, accounts, credentials, sharing, deployment, or public Actions. The Actions service itself writes only its caller-selected local state file and same-directory lock/temporary files.

@@ -1,7 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { parseStrictJson, verifyEvidence } from './cli.js';
+import { validateWorkflowRuns } from './workflows.js';
 
-export const ACTIONS_SCHEMA = 'gv.valley-of-technocore.actions/1';
+export const ACTIONS_SCHEMA = 'gv.valley-of-technocore.actions/2';
 export const OPERATIONS = Object.freeze(Object.assign(Object.create(null), {
   'evidence.verify.v1': {
     label: 'Verify evidence', description: 'Verify one local Valley evidence JSON object.',
@@ -66,7 +67,7 @@ function validId(value, label) { if (typeof value !== 'string' || !UUID.test(val
 function validDate(value, label) { if (typeof value !== 'string' || !ISO_DATE.test(value) || Number.isNaN(Date.parse(value))) throw new ActionsInputError(`${label} must be an ISO timestamp`); }
 function validString(value, label) { if (typeof value !== 'string' || value.includes('\u0000')) throw new ActionsInputError(`${label} must be a string without NUL`); }
 
-export function newState() { return { schema: ACTIONS_SCHEMA, actions: [], runs: [] }; }
+export function newState() { return { schema: ACTIONS_SCHEMA, actions: [], runs: [], workflow_runs: [] }; }
 export function operationCatalogue() { return Object.entries(OPERATIONS).map(([id, operation]) => ({ id, label: operation.label, description: operation.description, fields: operation.fields })); }
 
 function actionView(action) { return { ...action, input_fields: operationFor(action.operation).fields }; }
@@ -83,8 +84,8 @@ function validateInputs(operation, inputs) {
 }
 
 export function validateState(state) {
-  exactObject(state, ['schema', 'actions', 'runs'], 'state');
-  if (state.schema !== ACTIONS_SCHEMA || !Array.isArray(state.actions) || !Array.isArray(state.runs)) throw new ActionsInputError('unsupported state');
+  exactObject(state, ['schema', 'actions', 'runs', 'workflow_runs'], 'state');
+  if (state.schema !== ACTIONS_SCHEMA || !Array.isArray(state.actions) || !Array.isArray(state.runs) || !Array.isArray(state.workflow_runs)) throw new ActionsInputError('unsupported state');
   const actions = new Set(); const runs = new Set(); const actionIds = new Set(); const names = new Set();
   for (const action of state.actions) {
     exactObject(action, ['id', 'name', 'operation', 'created_at'], 'stored action'); validId(action.id, 'stored action id'); cleanName(action.name); operationFor(action.operation); validDate(action.created_at, 'stored action created_at');
@@ -104,6 +105,7 @@ export function validateState(state) {
     if (runs.has(run.id)) throw new ActionsInputError('stored runs must have unique ids'); runs.add(run.id);
   }
   for (const run of state.runs) if (run.retry_of !== null && !runs.has(run.retry_of)) throw new ActionsInputError('stored run retry_of is unknown');
+  validateWorkflowRuns(state.workflow_runs);
   return state;
 }
 

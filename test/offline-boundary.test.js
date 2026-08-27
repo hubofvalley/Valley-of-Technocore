@@ -57,12 +57,12 @@ test('verify-evidence is environment-invariant and writes no files', () => {
 test('package has zero runtime dependencies and only declared runtime files', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(pkg.dependencies, undefined); assert.equal(pkg.optionalDependencies, undefined);
-  assert.deepEqual(readdirSync(new URL('../src', import.meta.url)).sort(), ['actions-server.js', 'actions-store.js', 'actions.js', 'attestation.js', 'cli.js']);
+  assert.deepEqual(readdirSync(new URL('../src', import.meta.url)).sort(), ['actions-server.js', 'actions-store.js', 'actions.js', 'attestation.js', 'cli.js', 'workflows.js']);
   assert.deepEqual(readdirSync(new URL('../bin', import.meta.url)).sort(), ['valley-actions.js', 'valley-attestation.js', 'valley-technocore.js']);
 });
 
 test('actions runtime has no remote clients, subprocess, environment, shell, or private-key access', () => {
-  const runtime = ['../src/actions.js', '../src/actions-store.js', '../src/actions-server.js', '../bin/valley-actions.js']
+  const runtime = ['../src/actions.js', '../src/workflows.js', '../src/actions-store.js', '../src/actions-server.js', '../bin/valley-actions.js']
     .map((path) => readFileSync(new URL(path, import.meta.url), 'utf8')).join('\n');
   assert.doesNotMatch(runtime, /node:(?:https|net|tls|dgram|dns|child_process)|process\.env|createPrivateKey|execFile|spawn|\/bin\/sh|cmd\.exe/iu);
 });
