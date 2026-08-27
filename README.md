@@ -72,16 +72,15 @@ See [the evidence v1 specification](docs/v1-spec.md) for the exact schema and va
 
 ## Verify a supplied Technocore signed message
 
-The stateless `technocore.msg.v1` profile verifies the exact byte format used by the pinned upstream Technocore implementation. It consumes a supplied room, DID, nonce, text, and detached signature; it does not fetch Technocore or infer that the source is genuine or stored by the service.
+The stateless `technocore.msg.v1` profile verifies the exact byte format used by the pinned upstream Technocore implementation. Think of it as checking a letter's seal: it confirms that the supplied message matches the supplied signature and public key. It does not identify who controls the key or prove that a server included the message. It also provides no authority, eligibility decision, or replay protection.
+
+Run the checked-in signed fixture with one command:
 
 ```bash
-node ./bin/valley-technocore.js verify-technocore-message \
-  < fixtures/technocore-msg-v1-gauntlet.json
-
-echo $?
+node ./bin/valley-technocore.js verify-technocore-message < fixtures/technocore-msg-v1-gauntlet.json; printf '\nexit: %s\n' "$?"
 ```
 
-The checked-in fixture is one public third-party receipt mapping and returns `0`. It is not an authenticity, identity, contribution, eligibility, reward, or authority claim. See [the `technocore.msg.v1` profile](docs/technocore-msg-v1.md) for the pinned upstream revision, exact sweep semantics, input schema, and exclusions.
+Expected result: the JSON report contains `"decision":"verified"` and `"signature_status":"valid"`, followed by `exit: 0`. This checks only the supplied bytes, signature, and public key. It does not prove source authenticity, identity, server inclusion, contribution, eligibility, rewards, authority, or that the message has not been replayed. See [the `technocore.msg.v1` profile](docs/technocore-msg-v1.md) for the pinned upstream revision, exact sweep semantics, input schema, and exclusions.
 
 ### Exit codes
 

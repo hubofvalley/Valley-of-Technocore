@@ -59,6 +59,26 @@ test('sweep covers every pinned invisible category and preserves Unicode normali
   assert.equal(cli(JSON.stringify({ ...nfc, text: 'cafe\u0301' })).status, 3);
 });
 
+test('replaces the ZWJ inside an emoji sequence with one space', () => {
+  assert.equal(sweepText('\ud83d\udc69\u200d\ud83d\udcbb'), '\ud83d\udc69 \ud83d\udcbb');
+  assert.equal(cli(JSON.stringify(signedInput('\ud83d\udc69\u200d\ud83d\udcbb'))).status, 0);
+});
+
+test('replaces a bidi override with one space', () => {
+  assert.equal(sweepText('left\u202eright'), 'left right');
+  assert.equal(cli(JSON.stringify(signedInput('left\u202eright'))).status, 0);
+});
+
+test('replaces U+2028 line separator with one space', () => {
+  assert.equal(sweepText('first\u2028second'), 'first second');
+  assert.equal(cli(JSON.stringify(signedInput('first\u2028second'))).status, 0);
+});
+
+test('trims NBSP only at the ends and preserves an interior NBSP', () => {
+  assert.equal(sweepText('\u00a0alpha\u00a0beta\u00a0'), 'alpha\u00a0beta');
+  assert.equal(cli(JSON.stringify(signedInput('\u00a0alpha\u00a0beta\u00a0'))).status, 0);
+});
+
 test('keeps a 19-digit nonce byte-exact and rejects invalid room or nonce grammars', () => {
   const input = signedInput('maximum nonce');
   assert.equal(cli(JSON.stringify(input)).status, 0);
