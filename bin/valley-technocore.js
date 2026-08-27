@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
 import { run } from '../src/cli.js';
+import { runTechnocoreMessage } from '../src/technocore-message.js';
 
-process.exitCode = await run(process.argv.slice(2), process.stdin, process.stdout, process.stderr);
+const [command, ...args] = process.argv.slice(2);
+process.exitCode = command === 'verify-technocore-message'
+  ? await runTechnocoreMessage(args, process.stdin, process.stdout, process.stderr)
+  : await run([command, ...args], process.stdin, process.stdout, process.stderr);
