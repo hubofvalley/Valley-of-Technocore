@@ -55,7 +55,7 @@ For exact testing commands, reproducibility limits, and result-source boundaries
 
 ## Run local Actions
 
-The `valley-actions` product surface provides a loopback-only UI for creating, running, retrying, and inspecting bounded local Actions:
+The `valley-actions` product surface provides a loopback-only UI for creating, running, retrying, and inspecting bounded local Actions, plus a fixed **Verify & export proof receipt** workflow. It verifies supplied evidence, records per-step results, and exports a JSON or Markdown receipt through the browser.
 
 ```bash
 mkdir -p "$PWD/.local-actions"

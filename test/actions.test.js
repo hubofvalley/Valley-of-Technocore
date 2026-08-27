@@ -23,7 +23,7 @@ async function fixture(t) {
 test('serves a usable Actions index', async (t) => {
   const { base } = await fixture(t); const response = await fetch(base);
   assert.equal(response.status, 200); const html = await response.text();
-  for (const phrase of ['Create action', 'Actions index', 'Run history', 'Retry failed run']) assert.match(html, new RegExp(phrase, 'u'));
+  for (const phrase of ['Proof workflow', 'Create action', 'Actions index', 'Run history', 'Retry failed run', 'Export receipt JSON']) assert.match(html, new RegExp(phrase, 'u'));
   assert.match(response.headers.get('content-security-policy'), /frame-ancestors 'none'/u);
 });
 
@@ -61,6 +61,21 @@ test('runs the product evidence verifier through the Actions surface', async (t)
   assert.equal(invalid.body.status, 'failed'); assert.equal(invalid.body.exit_code, 3); assert.match(invalid.body.output, /"payload_hash_status":"invalid"/u);
 });
 
+test('runs the proof workflow, preserves per-step results, and supports receipt export data', async (t) => {
+  const { api } = await fixture(t); const evidence = readFileSync(new URL('../fixtures/valid-evidence.json', import.meta.url), 'utf8');
+  const catalogue = await api('/api/workflows'); assert.equal(catalogue.status, 200); assert.deepEqual(catalogue.body.workflows.map((item) => item.id), ['proof.receipt.v1']);
+  const run = await api('/api/workflows/proof.receipt.v1/runs', 'POST', { inputs: { label: 'RC5 proof', evidence_json: evidence } });
+  assert.equal(run.status, 201); assert.equal(run.body.status, 'succeeded'); assert.deepEqual(run.body.steps.map((item) => item.status), ['succeeded', 'succeeded']); assert.match(run.body.receipt.json, /gv\.valley-of-technocore\.proof-receipt\/1/u); assert.match(run.body.receipt.json, /evidence_sha256/u); assert.match(run.body.receipt.markdown, /RC5 proof/u);
+  const inspected = await api(`/api/workflow-runs/${run.body.id}`); assert.equal(inspected.body.receipt.json, run.body.receipt.json);
+  const history = await api('/api/workflow-runs'); assert.equal(history.body.runs.length, 1);
+});
+
+test('stops the proof workflow at verification and re-runs failed workflow history', async (t) => {
+  const { api } = await fixture(t); const failed = await api('/api/workflows/proof.receipt.v1/runs', 'POST', { inputs: { label: 'Bad proof', evidence_json: '{bad' } });
+  assert.equal(failed.status, 201); assert.equal(failed.body.status, 'failed'); assert.deepEqual(failed.body.steps.map((item) => item.id), ['verify-evidence']); assert.equal(failed.body.receipt, null);
+  const retry = await api(`/api/workflow-runs/${failed.body.id}/retry`, 'POST', {}); assert.equal(retry.status, 201); assert.equal(retry.body.retry_of, failed.body.id); assert.equal(retry.body.status, 'failed');
+});
+
 test('accepts the documented maximum evidence field over HTTP', async (t) => {
   const { api } = await fixture(t);
   const action = (await api('/api/actions', 'POST', { name: 'Large evidence', operation: 'evidence.verify.v1' })).body;
@@ -83,6 +98,18 @@ test('rejects tampered persisted state before it can reach the UI', async (t) =>
   const { api, state } = await fixture(t);
   writeFileSync(state, JSON.stringify({ schema: 'gv.valley-of-technocore.actions/1', actions: [{ id: '00000000-0000-4000-8000-000000000000', name: '<img src=x onerror=alert(1)>', operation: 'text.uppercase', created_at: '2026-01-01T00:00:00.000Z', unexpected: true }], runs: [] }));
   const response = await api('/api/actions'); assert.equal(response.status, 400); assert.equal(response.body.error, 'stored action has missing or unknown fields');
+});
+
+test('rejects forged succeeded workflow state before it can reach the UI', async (t) => {
+  const { api, state } = await fixture(t); const evidence = readFileSync(new URL('../fixtures/valid-evidence.json', import.meta.url), 'utf8');
+  writeFileSync(state, JSON.stringify({ schema: 'gv.valley-of-technocore.actions/2', actions: [], runs: [], workflow_runs: [{ id: '00000000-0000-4000-8000-000000000000', workflow: 'proof.receipt.v1', status: 'succeeded', inputs: { label: 'Forged', evidence_json: evidence }, steps: [{ id: 'verify-evidence', label: 'Verify evidence', status: 'failed', output: '', error: 'forged', exit_code: 1 }], receipt: { json: '{}', markdown: 'forged' }, started_at: '2026-01-01T00:00:00.000Z', finished_at: '2026-01-01T00:00:00.000Z', retry_of: null }] }));
+  const response = await api('/api/workflow-runs'); assert.equal(response.status, 400); assert.equal(response.body.error, 'stored workflow run is inconsistent');
+});
+
+test('migrates an Actions v1 state without losing existing action history', (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'valley-actions-migrate-')); const state = join(directory, 'actions.json'); t.after(() => rmSync(directory, { recursive: true, force: true }));
+  const legacy = { schema: 'gv.valley-of-technocore.actions/1', actions: [{ id: '00000000-0000-4000-8000-000000000000', name: 'Legacy action', operation: 'text.uppercase', created_at: '2026-01-01T00:00:00.000Z' }], runs: [] };
+  writeFileSync(state, JSON.stringify(legacy)); const loaded = loadState(state); assert.equal(loaded.schema, 'gv.valley-of-technocore.actions/2'); assert.equal(loaded.actions[0].name, 'Legacy action'); assert.deepEqual(loaded.workflow_runs, []);
 });
 
 test('enforces the state cap before read and before write, and clears a dead lock', (t) => {
