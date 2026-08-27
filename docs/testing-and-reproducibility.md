@@ -174,6 +174,18 @@ The report has valid schema, payload hash, DID, and signature statuses; server a
 
 This is one offline byte-mapping and signature check against values supplied by another repository. It does not prove that the source is genuine, complete, current, or recognised; that Technocore stored the record; that the DID belongs to a person or organisation; or that any contribution, eligibility, reward, or authority exists. See the [compatibility record](technocore-receipt-compatibility.md) for the recorded field values and boundary.
 
+## Reproduce the `technocore.msg.v1` fixture
+
+`fixtures/technocore-msg-v1-gauntlet.json` is the same public `checkin` receipt represented as the strict stateless profile. It targets upstream Technocore commit `9c7df0e3616cf28d17e7c8ebeb0c05de6adf117c` and never contacts either upstream service or the third-party repository at runtime.
+
+```sh
+node ./bin/valley-technocore.js verify-technocore-message \
+  < fixtures/technocore-msg-v1-gauntlet.json
+test "$?" -eq 0
+```
+
+The profile contract and non-claims are in [`technocore-msg-v1.md`](technocore-msg-v1.md).
+
 ## Verify the release attestation
 
 The checked-in attestation declares RC5 release metadata and is verified by the standalone verifier in the current checkout:

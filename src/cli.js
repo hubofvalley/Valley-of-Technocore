@@ -19,7 +19,7 @@ const WEAK_KEYS = new Set([
   'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39cc3c0e0d174c5e44377a'
 ]);
 
-class InputError extends Error {}
+export class InputError extends Error {}
 
 function fail(message) {
   throw new InputError(message);
@@ -125,6 +125,13 @@ function didKeyBytes(did) {
   return key;
 }
 
+export function verifyDidKeySignature(did, message, signatureB64u) {
+  const rawKey = didKeyBytes(did);
+  const signature = decodeBase64url(signatureB64u, 'signature_b64u', 64);
+  const spki = Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), rawKey]);
+  return verifySignature(null, message, createPublicKey({ key: spki, format: 'der', type: 'spki' }), signature);
+}
+
 function mod(value, modulus) {
   const result = value % modulus;
   return result < 0n ? result + modulus : result;
@@ -219,11 +226,8 @@ export function verifyEvidence(evidence) {
   validateEvidence(evidence);
   const payload = decodeBase64url(evidence.statement.payload_b64u, 'payload_b64u');
   const hash = `sha256:${createHash('sha256').update(payload).digest('hex')}`;
-  const rawKey = didKeyBytes(evidence.statement.signer_did);
-  const spki = Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), rawKey]);
-  const signature = decodeBase64url(evidence.statement.signature.value, 'signature value', 64);
   const hashValid = hash === evidence.statement.payload_sha256;
-  const signatureValid = verifySignature(null, payload, createPublicKey({ key: spki, format: 'der', type: 'spki' }), signature);
+  const signatureValid = verifyDidKeySignature(evidence.statement.signer_did, payload, evidence.statement.signature.value);
   return {
     schema_status: 'valid',
     payload_hash_status: hashValid ? 'valid' : 'invalid',

@@ -70,6 +70,19 @@ v1 exposes two evidence commands:
 
 See [the evidence v1 specification](docs/v1-spec.md) for the exact schema and validation contract.
 
+## Verify a supplied Technocore signed message
+
+The stateless `technocore.msg.v1` profile verifies the exact byte format used by the pinned upstream Technocore implementation. It consumes a supplied room, DID, nonce, text, and detached signature; it does not fetch Technocore or infer that the source is genuine or stored by the service.
+
+```bash
+node ./bin/valley-technocore.js verify-technocore-message \
+  < fixtures/technocore-msg-v1-gauntlet.json
+
+echo $?
+```
+
+The checked-in fixture is one public third-party receipt mapping and returns `0`. It is not an authenticity, identity, contribution, eligibility, reward, or authority claim. See [the `technocore.msg.v1` profile](docs/technocore-msg-v1.md) for the pinned upstream revision, exact sweep semantics, input schema, and exclusions.
+
 ### Exit codes
 
 `create-evidence`:
@@ -83,6 +96,13 @@ See [the evidence v1 specification](docs/v1-spec.md) for the exact schema and va
 - `1` — internal failure or runtime I/O failure.
 - `2` — malformed evidence, unsupported evidence, or invalid command usage.
 - `3` — evidence was processable, but its payload hash or signature was invalid.
+
+`verify-technocore-message`:
+
+- `0` — the supplied DID verifies the exact pinned Technocore message bytes.
+- `1` — internal failure or runtime I/O failure.
+- `2` — malformed or unsupported profile input.
+- `3` — the input was processable, but its detached signature was invalid.
 
 Diagnostics go to stderr. Processable output is one canonical JSON object on stdout without a trailing newline.
 
@@ -116,8 +136,10 @@ Generated or verified evidence grants no permission to act and carries no author
 - `npm test` reports an unsupported Node.js version: install Node.js 22 or newer, confirm with `node --version`, then rerun the test.
 - Node reports `MODULE_NOT_FOUND`: run the CLI command from the cloned repository root and keep the leading `./` in `./bin/valley-technocore.js`.
 - CLI prints the usage line and exits `2`: supply exactly one supported command.
-- CLI prints `error: ...` and exits `2`: input must be one UTF-8 JSON object of at most 1,048,576 bytes matching [the v1 specification](docs/v1-spec.md). Do not add duplicate or unknown fields, comments, trailing commas, padded base64url, or a BOM.
-- Verification exits `3`: inspect `payload_hash_status` and `signature_status` in stdout. The file was parsed, but its hash or detached signature did not verify.
+- `create-evidence` or `verify-evidence` prints `error: ...` and exits `2`: input must match [the evidence v1 specification](docs/v1-spec.md). Do not add duplicate or unknown fields, comments, trailing commas, padded base64url, or a BOM.
+- `verify-technocore-message` prints `error: ...` and exits `2`: input must match [the `technocore.msg.v1` profile](docs/technocore-msg-v1.md), including its stricter room and nonce grammar.
+- `verify-evidence` exits `3`: inspect `payload_hash_status` and `signature_status` in stdout. The file was parsed, but its hash or detached signature did not verify.
+- `verify-technocore-message` exits `3`: inspect `signature_status` and `reasons` in stdout. The supplied message profile was processable, but its detached signature did not verify.
 - Shell prompt appears on the same line as JSON: expected. Successful CLI output deliberately has no trailing newline; redirect it to a file or append a newline when viewing.
 
 ## Status
