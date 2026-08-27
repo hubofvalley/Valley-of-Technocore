@@ -38,7 +38,7 @@ test('CLI help is discoverable, complete, and never reads stdin', () => {
   }
 });
 
-test('hierarchical commands retain JSON defaults and offer human-readable reports', () => {
+test('hierarchical commands retain canonical artefacts and offer human-readable verification reports', () => {
   const evidenceText = readFileSync(new URL('../fixtures/valid-evidence.json', import.meta.url), 'utf8');
   const legacy = run('bin/valley-technocore.js', ['verify-evidence'], evidenceText);
   const hierarchical = run('bin/valley-technocore.js', ['evidence', 'verify'], evidenceText);
@@ -47,8 +47,7 @@ test('hierarchical commands retain JSON defaults and offer human-readable report
   assert.equal(human.status, 0); assert.match(human.stdout, /^schema status: valid$/mu);
   assert.match(human.stdout, /^authority: none$/mu); assert.equal(human.stderr, '');
   const createHuman = run('bin/valley-technocore.js', ['evidence', 'create', '--format', 'human'], readFileSync(new URL('../fixtures/valid-input.json', import.meta.url), 'utf8'));
-  assert.equal(createHuman.status, 0); assert.doesNotMatch(createHuman.stdout, /\[object Object\]/u);
-  assert.match(createHuman.stdout, /^statement: \{/mu);
+  assert.equal(createHuman.status, 2); assert.equal(createHuman.stdout, ''); assert.match(createHuman.stderr, /^error: unknown command or option/mu);
   const bad = run('bin/valley-technocore.js', ['evidence', 'wat']);
   assert.equal(bad.status, 2); assert.match(bad.stderr, /^error: unknown command or option/mu);
   const attestation = run('bin/valley-attestation.js', ['verify', '--format', 'human'], readFileSync(new URL('../fixtures/release-attestation-v1.json', import.meta.url), 'utf8'));
@@ -60,6 +59,8 @@ test('normalises supported local receipt exports and reports missing signatures 
   const flat = { room: canonical.room, did: canonical.did, nonce: canonical.nonce, text: canonical.text, signature: canonical.signature_b64u };
   const normalised = run('bin/valley-technocore.js', ['receipt', 'normalize'], JSON.stringify(flat));
   assert.equal(normalised.status, 0); assert.deepEqual(JSON.parse(normalised.stdout), canonical);
+  const normaliseHuman = run('bin/valley-technocore.js', ['receipt', 'normalize', '--format', 'human'], JSON.stringify(flat));
+  assert.equal(normaliseHuman.status, 2); assert.equal(normaliseHuman.stdout, ''); assert.match(normaliseHuman.stderr, /^error: unknown receipt command or option/mu);
   const envelope = { room: canonical.room, receipt: { signer_did: canonical.did, nonce: canonical.nonce, message: canonical.text, signature: canonical.signature_b64u } };
   const verified = run('bin/valley-technocore.js', ['receipt', 'verify', '--format', 'human'], JSON.stringify(envelope));
   assert.equal(verified.status, 0); assert.match(verified.stdout, /^decision: verified$/mu);
@@ -74,6 +75,9 @@ test('documented CLI commands remain discoverable from README', () => {
   for (const command of ['create-evidence', 'verify-evidence', 'verify-technocore-message', 'valley-attestation']) {
     assert.match(readme, new RegExp(`\\b${command}\\b`, 'u'));
   }
+  assert.match(readme, /Default output, and explicit `--format json` output, is one canonical JSON object/u);
+  assert.match(readme, /`--format human` is available only for verification and report commands/u);
+  assert.match(readme, /Evidence creation and receipt normalisation always emit canonical JSON artefacts/u);
 });
 
 test('machine reports preserve their allowed schema and claim boundaries', () => {

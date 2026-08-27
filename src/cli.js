@@ -20,19 +20,19 @@ const WEAK_KEYS = new Set([
   'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39cc3c0e0d174c5e44377a'
 ]);
 
-const ROOT_USAGE = `usage: valley-technocore <command> [--format json|human]
+const ROOT_USAGE = `usage: valley-technocore <command>
 
 Commands:
-  evidence create       package supplied signed bytes as evidence
-  evidence verify       verify packaged evidence
-  message verify        verify a technocore.msg.v1 message
-  receipt normalize     normalise one supported local receipt export
-  receipt verify        normalise and verify one supported local receipt export
+  evidence create       package supplied signed bytes as canonical JSON
+  evidence verify       verify packaged evidence [--format json|human]
+  message verify        verify a technocore.msg.v1 message [--format json|human]
+  receipt normalize     normalise one local receipt export as canonical JSON
+  receipt verify        normalise and verify one export [--format json|human]
 
 Legacy aliases: create-evidence, verify-evidence, verify-technocore-message
 Run valley-technocore <command> --help for command details.
 `;
-const CREATE_USAGE = 'usage: valley-technocore create-evidence [--format json|human] < input.json\n';
+const CREATE_USAGE = 'usage: valley-technocore create-evidence < input.json\n';
 const VERIFY_USAGE = 'usage: valley-technocore verify-evidence [--format json|human] < evidence.json\n';
 
 export class InputError extends Error {}
@@ -269,7 +269,10 @@ export async function run(args, stdin, stdout, stderr) {
     return 0;
   }
   const command = args[0]; const formatArgs = parseFormatArgs(args.slice(1));
-  if (!['create-evidence', 'verify-evidence'].includes(command) || !formatArgs) { stderr.write(`error: unknown command or option\n${ROOT_USAGE}`); return 2; }
+  if (!['create-evidence', 'verify-evidence'].includes(command) || !formatArgs
+    || (command === 'create-evidence' && formatArgs.format !== 'json')) {
+    stderr.write(`error: unknown command or option\n${ROOT_USAGE}`); return 2;
+  }
   try {
     const input = await readInput(stdin);
     const output = command === 'create-evidence' ? createEvidence(input) : verifyEvidence(input);

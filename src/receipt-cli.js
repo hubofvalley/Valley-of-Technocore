@@ -4,7 +4,8 @@ import { normalizeReceipt } from './receipt.js';
 import { verifyTechnocoreMessage } from './technocore-message.js';
 
 const MAX_INPUT_BYTES = 1024 * 1024;
-const USAGE = `usage: valley-technocore receipt <normalize|verify> [--format json|human]
+const USAGE = `usage: valley-technocore receipt normalize
+       valley-technocore receipt verify [--format json|human]
 Reads one supported local JSON receipt export from stdin.
 Accepted shapes: canonical technocore.msg.v1, flat receipt, or {"room":...,"receipt":{...}}.
 No files or network resources are read by the command.
@@ -28,7 +29,10 @@ export async function runReceipt(args, stdin, stdout, stderr) {
     stdout.write(USAGE); return 0;
   }
   const [command, ...options] = args; const formatArgs = parseFormatArgs(options);
-  if (!['normalize', 'verify'].includes(command) || !formatArgs) { stderr.write(`error: unknown receipt command or option\n${USAGE}`); return 2; }
+  if (!['normalize', 'verify'].includes(command) || !formatArgs
+    || (command === 'normalize' && formatArgs.format !== 'json')) {
+    stderr.write(`error: unknown receipt command or option\n${USAGE}`); return 2;
+  }
   try {
     const canonical = normalizeReceipt(await readReceipt(stdin));
     const output = command === 'normalize' ? canonical : verifyTechnocoreMessage(canonical);

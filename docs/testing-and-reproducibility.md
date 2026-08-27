@@ -2,6 +2,8 @@
 
 This document shows how to reproduce the repository's local test results from a clean checkout. It also separates results produced locally by this toolkit from CI records and claims copied from a third-party source.
 
+For the shortest fresh-clone valid-to-one-byte-tampered sequence, use the [terminal tutorial](terminal-tutorial.md).
+
 None of these checks establishes Technocore or FLOP authenticity, affiliation, recognition, identity, authorship, contribution, ownership, eligibility, rewards, authority, or source validity.
 
 ## Prerequisites

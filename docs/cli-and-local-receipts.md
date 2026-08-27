@@ -13,7 +13,9 @@ valley-technocore receipt verify
 valley-attestation verify
 ```
 
-The original `create-evidence`, `verify-evidence`, and `verify-technocore-message` names remain supported. JSON remains the default machine output. Add `--format human` for a line-oriented display intended for a person. Both formats use the same validation and exit codes:
+The original `create-evidence`, `verify-evidence`, and `verify-technocore-message` names remain supported. JSON remains the default machine output. Verification commands accept `--format human` for a line-oriented report intended for a person. Artefact-producing commands (`evidence create` and `receipt normalize`) always write canonical JSON and reject `--format human`; their output must remain suitable for later verification.
+
+JSON and human verification reports use the same validation and exit codes:
 
 - `0`: processed and valid, or normalisation completed
 - `2`: malformed input, unsupported shape, or command error

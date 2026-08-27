@@ -52,6 +52,7 @@ rm evidence.json evidence-tampered.json
 ```
 
 For exact testing commands, reproducibility limits, and result-source boundaries, see [Testing and reproducibility](docs/testing-and-reproducibility.md).
+For a copy-paste valid-to-one-byte-tampered walkthrough, see the [terminal tutorial](docs/terminal-tutorial.md).
 
 ## When this is useful
 
@@ -70,7 +71,7 @@ v1 exposes two evidence commands:
 
 See [the evidence v1 specification](docs/v1-spec.md) for the exact schema and validation contract.
 
-The CLI also provides a grouped command hierarchy, optional human-readable reports, and bounded normalisation for one local receipt export at a time. See [CLI and local receipt workflow](docs/cli-and-local-receipts.md). Existing command names and default JSON reports remain supported.
+The CLI also provides a grouped command hierarchy, optional human-readable verification reports, and bounded normalisation for one local receipt export at a time. Evidence creation and receipt normalisation always emit canonical JSON artefacts; `--format human` applies only to verification/report commands. See [CLI and local receipt workflow](docs/cli-and-local-receipts.md). Existing command names and default JSON reports remain supported.
 
 ## Verify a supplied Technocore signed message
 
@@ -105,7 +106,7 @@ Expected result: the JSON report contains `"decision":"verified"` and `"signatur
 - `2` — malformed or unsupported profile input.
 - `3` — the input was processable, but its detached signature was invalid.
 
-Diagnostics go to stderr. Processable output is one canonical JSON object on stdout without a trailing newline.
+Diagnostics go to stderr. Default output, and explicit `--format json` output, is one canonical JSON object on stdout without a trailing newline. `--format human` is available only for verification and report commands. Evidence creation and receipt normalisation always emit canonical JSON artefacts.
 
 ## Verify the release attestation
 
@@ -145,7 +146,7 @@ Generated or verified evidence grants no permission to act and carries no author
 
 ## Status
 
-`0.1.0-rc.6` adds the standalone release-attestation verifier. The original evidence CLI and immutable `v0.1.0-rc.5` tag retain their existing semantics.
+The checked-in package metadata remains `0.1.0-rc.6` and marks the package private. The published GitHub prerelease is `v0.1.0-rc.6`; it is not a stable `v0.1.0` release. Its attached tar archive is explicitly named `valley-of-technocore-v0.1.0-rc.5.tar`, so this repository does not describe it as a v0.1.0 artefact. See the [release-readiness facts](docs/release-readiness.md) and verify them again before any release action.
 
 ## Licence
 

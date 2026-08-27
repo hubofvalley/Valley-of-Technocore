@@ -7,7 +7,7 @@ import { runReceipt } from '../src/receipt-cli.js';
 const argv = process.argv.slice(2); const [command, ...args] = argv;
 let result;
 if (command === 'evidence' && args.length === 1 && ['--help', '-h'].includes(args[0])) {
-  process.stdout.write('usage: valley-technocore evidence <create|verify> [--format json|human]\n'); result = 0;
+  process.stdout.write('usage: valley-technocore evidence create\n       valley-technocore evidence verify [--format json|human]\n'); result = 0;
 } else if (command === 'message' && args.length === 1 && ['--help', '-h'].includes(args[0])) {
   process.stdout.write('usage: valley-technocore message verify [--format json|human]\n'); result = 0;
 } else if (command === 'receipt') result = await runReceipt(args, process.stdin, process.stdout, process.stderr);
