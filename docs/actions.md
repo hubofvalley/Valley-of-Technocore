@@ -38,10 +38,10 @@ Operations are statically mapped to internal JavaScript functions. Action data c
 
 The state file stores Action definitions and run history as JSON. Each run snapshots its inputs and terminal result. Writes use a mode-`0600` same-directory temporary file, file sync, atomic rename, and a short-lived exclusive lock. The parent directory is created with mode `0700` when absent.
 
-The UI checks the exact loopback Host and Origin, requires JSON for mutations, uses a per-process request token, sends no CORS allowance, and applies a restrictive content-security policy. Stored content is HTML-escaped before display.
+The UI checks the exact loopback Host and Origin, requires JSON for mutations, uses a per-process request-protection token, sends no CORS allowance, and applies a restrictive content-security policy. Stored state is strictly schema-validated before use and displayed content is HTML-escaped. The token and loopback binding are request/CSRF protections, not authentication: run this MVP only on a trusted single-user host. Do not share the local URL or state directory.
 
-This is not a sandbox, durable job queue, or tamper-evident audit log. A process crash during the small synchronous execution window may prevent the in-memory `running` state from being written. The current single-file store is capped at 8 MiB and has no pruning UI.
+This is not a sandbox, durable job queue, or tamper-evident audit log. A process crash during the small synchronous execution window may prevent the in-memory `running` state from being written. The current single-file store is capped at 8 MiB before read and write and has no pruning UI. Mutations take an exclusive lock across load, mutate, validate, cap-check, and atomic save; an abandoned lock is recovered only when its recorded local PID no longer exists.
 
 ## Explicit non-features
 
-No multi-step workflows, schedules, triggers, branching, editing, deletion, plugins, arbitrary commands, filesystem operations, outbound networking, remote workers, accounts, credentials, sharing, deployment, or public Actions.
+No multi-step workflows, schedules, triggers, branching, editing, deletion, plugins, arbitrary commands, action-selected filesystem operations, outbound networking, remote workers, accounts, credentials, sharing, deployment, or public Actions. The Actions service itself writes only its caller-selected local state file and same-directory lock/temporary files.

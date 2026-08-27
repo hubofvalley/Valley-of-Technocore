@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
 import { createActionsServer } from '../src/actions-server.js';
+import { loadState, saveState, withStateTransaction } from '../src/actions-store.js';
+import { createAction, newState } from '../src/actions.js';
 
 async function fixture(t) {
   const directory = mkdtempSync(join(tmpdir(), 'valley-actions-')); const state = join(directory, 'actions.json');
@@ -59,13 +61,36 @@ test('runs the product evidence verifier through the Actions surface', async (t)
   assert.equal(invalid.body.status, 'failed'); assert.equal(invalid.body.exit_code, 3); assert.match(invalid.body.output, /"payload_hash_status":"invalid"/u);
 });
 
+test('accepts the documented maximum evidence field over HTTP', async (t) => {
+  const { api } = await fixture(t);
+  const action = (await api('/api/actions', 'POST', { name: 'Large evidence', operation: 'evidence.verify.v1' })).body;
+  const run = await api(`/api/actions/${action.id}/runs`, 'POST', { inputs: { evidence_json: 'x'.repeat(65536) } });
+  assert.equal(run.status, 201); assert.equal(run.body.status, 'failed'); assert.equal(run.body.exit_code, 2);
+});
+
 test('rejects arbitrary operations, malformed inputs, cross-origin writes, and retry of success', async (t) => {
   const { api, base } = await fixture(t);
-  assert.equal((await api('/api/actions', 'POST', { name: 'Shell', operation: 'shell.exec' })).status, 400);
+  for (const operation of ['shell.exec', '__proto__', 'constructor', 'toString']) assert.equal((await api('/api/actions', 'POST', { name: `Rejected ${operation}`, operation })).status, 400);
   const action = (await api('/api/actions', 'POST', { name: 'Safe', operation: 'text.uppercase' })).body;
   assert.equal((await api(`/api/actions/${action.id}/runs`, 'POST', { inputs: { text: 'ok', extra: 'no' } })).status, 400);
   const forbidden = await fetch(base + '/api/actions', { method: 'POST', headers: { 'content-type': 'application/json', origin: 'https://evil.invalid' }, body: JSON.stringify({ name: 'No', operation: 'text.uppercase' }) });
   assert.equal(forbidden.status, 403);
   const run = (await api(`/api/actions/${action.id}/runs`, 'POST', { inputs: { text: 'ok' } })).body;
   assert.equal((await api(`/api/runs/${run.id}/retry`, 'POST', {})).status, 409);
+});
+
+test('rejects tampered persisted state before it can reach the UI', async (t) => {
+  const { api, state } = await fixture(t);
+  writeFileSync(state, JSON.stringify({ schema: 'gv.valley-of-technocore.actions/1', actions: [{ id: '00000000-0000-4000-8000-000000000000', name: '<img src=x onerror=alert(1)>', operation: 'text.uppercase', created_at: '2026-01-01T00:00:00.000Z', unexpected: true }], runs: [] }));
+  const response = await api('/api/actions'); assert.equal(response.status, 400); assert.equal(response.body.error, 'stored action has missing or unknown fields');
+});
+
+test('enforces the state cap before read and before write, and clears a dead lock', (t) => {
+  const directory = mkdtempSync(join(tmpdir(), 'valley-actions-store-')); const statePath = join(directory, 'actions.json'); t.after(() => rmSync(directory, { recursive: true, force: true }));
+  writeFileSync(statePath, Buffer.alloc(8 * 1024 * 1024 + 1)); assert.throws(() => loadState(statePath), /state exceeds 8 MiB/u);
+  rmSync(statePath); const state = newState(); createAction(state, { name: 'Cap test', operation: 'text.uppercase' });
+  state.runs.push({ id: '00000000-0000-4000-8000-000000000001', action_id: state.actions[0].id, action_name: 'Cap test', operation: 'text.uppercase', status: 'failed', inputs: { text: 'x' }, output: 'x'.repeat(8 * 1024 * 1024), error: '', exit_code: 1, started_at: '2026-01-01T00:00:00.000Z', finished_at: '2026-01-01T00:00:00.000Z', duration_ms: 0, retry_of: null });
+  assert.throws(() => saveState(statePath, state), /state exceeds 8 MiB/u); assert.equal(existsSync(statePath), false);
+  writeFileSync(`${statePath}.lock`, '99999999\n', { mode: 0o600 }); const result = withStateTransaction(statePath, (fresh) => createAction(fresh, { name: 'After stale lock', operation: 'text.uppercase' }));
+  assert.equal(result.name, 'After stale lock'); assert.equal(existsSync(`${statePath}.lock`), false);
 });

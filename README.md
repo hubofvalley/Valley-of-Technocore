@@ -116,9 +116,9 @@ See [the release-attestation v1 specification](docs/release-attestation-v1.md) f
 
 ## Offline and safety boundary
 
-The toolkit consumes only data explicitly supplied through local stdin. It cannot discover whether that input is genuine, complete, recognised, eligible, or current.
+The evidence and attestation commands consume only data explicitly supplied through local stdin. The separate Actions surface consumes only its local UI/API input and its caller-selected persisted state. Neither surface can discover whether supplied data is genuine, complete, recognised, eligible, or current.
 
-The evidence and attestation commands make no network requests, remain filesystem-free, and start no server or subprocess. The separate Actions surface starts an HTTP server bound only to `127.0.0.1` and writes only its caller-selected local state file plus same-directory lock and temporary files used for atomic updates. Its fixed operation catalogue executes in-process: it has no shell, subprocess, outbound network, remote execution, credentials, private-key handling, cron, publishing, or deployment behaviour. `npm` is used here only to run the local test script; the package remains private and is not published to npm.
+The evidence and attestation commands make no network requests, remain filesystem-free, and start no server or subprocess. The separate Actions surface starts an HTTP server bound only to `127.0.0.1`; it may create the selected state file's missing parent directories and writes only that local state file plus same-directory lock and temporary files used for atomic updates. Its fixed operation catalogue executes in-process: it has no shell, subprocess, outbound network, remote execution, credentials, private-key handling, cron, publishing, or deployment behaviour. `npm` is used here only to run the local test script; the package remains private and is not published to npm.
 
 Generated or verified evidence grants no permission to act and carries no authority. Independent source validation remains the user's responsibility.
 

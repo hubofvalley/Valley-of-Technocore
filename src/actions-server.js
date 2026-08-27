@@ -2,9 +2,9 @@ import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { isAbsolute } from 'node:path';
 import { ActionsConflictError, ActionsInputError, ActionsNotFoundError, createAction, getAction, getRun, listActions, listRuns, operationCatalogue, retryRun, runAction } from './actions.js';
-import { loadState, saveState } from './actions-store.js';
+import { loadState, withStateTransaction } from './actions-store.js';
 
-const MAX_BODY_BYTES = 64 * 1024;
+const MAX_BODY_BYTES = 512 * 1024;
 
 const HTML = `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -36,19 +36,16 @@ function send(response, status, body, type = 'application/json; charset=utf-8') 
 async function readJson(request) {
   if (request.headers['content-type'] !== 'application/json') throw new ActionsInputError('content-type must be application/json');
   const chunks = []; let size = 0;
-  for await (const chunk of request) { size += chunk.length; if (size > MAX_BODY_BYTES) throw new ActionsInputError('request exceeds 64 KiB'); chunks.push(chunk); }
+  for await (const chunk of request) { size += chunk.length; if (size > MAX_BODY_BYTES) throw new ActionsInputError('request exceeds 512 KiB'); chunks.push(chunk); }
   let body; try { body = JSON.parse(Buffer.concat(chunks).toString('utf8')); } catch { throw new ActionsInputError('body must be valid JSON'); }
   return body;
 }
 
 export function createActionsServer(statePath) {
   if (!isAbsolute(statePath)) throw new ActionsInputError('state path must be absolute');
-  let queue = Promise.resolve();
   const csrfToken = randomUUID();
-  const mutate = (operation) => {
-    const task = queue.then(() => { const state = loadState(statePath); const result = operation(state); saveState(statePath, state); return result; });
-    queue = task.catch(() => {}); return task;
-  };
+  let queue = Promise.resolve();
+  const mutate = (operation) => { const task = queue.then(() => withStateTransaction(statePath, operation)); queue = task.catch(() => {}); return task; };
   return createServer(async (request, response) => {
     try {
       const expectedHost = `127.0.0.1:${request.socket.localPort}`; const origin = `http://${expectedHost}`;
