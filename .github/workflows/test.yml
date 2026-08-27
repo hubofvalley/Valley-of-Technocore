@@ -1,4 +1,6 @@
-name: Test
+name: Node CI — Compatibility & Test Suite
+
+run-name: ${{ github.event_name }} · Node compatibility & test suite
 
 on:
   workflow_dispatch:
@@ -10,8 +12,13 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: node-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
+  node-test-suite:
+    name: Node ${{ matrix.node-version }} · Test Suite
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
