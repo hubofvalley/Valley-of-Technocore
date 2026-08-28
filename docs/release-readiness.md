@@ -17,6 +17,9 @@ contribution, eligibility, reward, or Technocore/FLOP recognition.
   `valley-of-technocore-v0.2.0-rc.1.tar.sha256` manifest.
 - The archive is reproduced from the candidate commit with:
   `git archive --format=tar --prefix=valley-of-technocore-v0.2.0-rc.1/ HEAD`.
+- Candidate mode binds the package version and `private` flag to the committed
+  `HEAD:package.json`, even if the working-tree package file was edited. The
+  supplied archive path must use the exact versioned filename above.
 - Validate the local candidate without GitHub access:
 
   ```bash
@@ -26,7 +29,10 @@ contribution, eligibility, reward, or Technocore/FLOP recognition.
   ```
 
   The checker reproduces `HEAD`, compares archive bytes, checks the exact
-  checksum manifest, and reports the candidate commit and digest.
+  checksum manifest, and reports the candidate commit and digest. Candidate
+  mode also requires the working `package.json` metadata to match
+  `HEAD:package.json` and requires the archive basename to be exactly
+  `valley-of-technocore-v0.2.0-rc.1.tar`.
 
 ## v0.1.0 status
 
@@ -52,11 +58,19 @@ For package version `X.Y.Z`, a stable release must satisfy all of the following:
 5. The archive bytes exactly equal `git archive --format=tar --prefix=valley-of-technocore-vX.Y.Z/ vX.Y.Z`; the checksum file is exactly `<sha256><two spaces><archive name><newline>`.
 6. If `release-attestation-v1.json` is attached, its signature must be valid and its signed repository, tag, commit, and SHA-256 declaration must bind the same release archive. Attestation remains an additional cryptographic declaration, not proof of external facts or authority.
 
-For a release candidate `X.Y.Z-rc.N`, the local candidate contract is the same
-for package metadata, archive naming, archive bytes, and checksum formatting,
-but the intended tag is `vX.Y.Z-rc.N`, the release channel is prerelease, and
-the archive is checked against the candidate commit directly because this
-preparation does not create or inspect a remote tag or release.
+For a release candidate `X.Y.Z-rc.N`, distinguish these two stages:
+
+- Local candidate mode (`--mode candidate`) validates the committed `HEAD`
+  without GitHub access. It requires matching working-tree and committed
+  package metadata, the exact `vX.Y.Z-rc.N` archive basename, deterministic
+  archive bytes, and the exact checksum manifest. It creates or checks no tag
+  or GitHub release.
+- Post-tag prerelease validation uses the normal remote contract after the
+  `vX.Y.Z-rc.N` tag and GitHub prerelease exist. It checks that the local and
+  remote tag targets match, that GitHub reports a published non-draft
+  prerelease, and that the attached archive and checksum assets satisfy the
+  same byte and manifest rules. This stage may call `gh`; it is not the local
+  candidate mode.
 
 ## Check it
 

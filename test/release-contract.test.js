@@ -86,9 +86,15 @@ test('release candidate contract binds committed metadata and archive filename',
 
     writeFileSync(packagePath, '{"version":"9.9.9-rc.9","private":true}\n');
     const dirtyMetadata = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
-    assert.equal(dirtyMetadata.status, 0, dirtyMetadata.stderr);
-    assert.match(dirtyMetadata.stdout, /"version":"0\.2\.0-rc\.1"/u);
+    assert.equal(dirtyMetadata.status, 1);
+    assert.match(dirtyMetadata.stderr, /package metadata must match committed HEAD:package\.json/u);
 
+    writeFileSync(packagePath, '{"version":"0.2.0-rc.1","private":false}\n');
+    const dirtyPrivate = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(dirtyPrivate.status, 1);
+    assert.match(dirtyPrivate.stderr, /package metadata must match committed HEAD:package\.json/u);
+
+    writeFileSync(packagePath, '{"version":"0.2.0-rc.1","private":true}\n');
     const wrongName = join(directory, 'wrong-name.tar');
     writeFileSync(wrongName, archive.stdout);
     const wrongFilename = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', wrongName], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });

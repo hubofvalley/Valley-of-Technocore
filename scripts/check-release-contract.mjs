@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { verifyAttestation } from '../src/attestation.js';
 
 const REPOSITORY = 'hubofvalley/Valley-of-Technocore';
@@ -96,9 +97,14 @@ function main() {
   const candidateMode = options.mode === 'candidate';
   if (options.mode !== undefined && options.mode !== 'stable' && !candidateMode) fail(`unsupported release-contract mode: ${options.mode}`);
   const packageRoot = resolve(packagePath, '..');
-  const pkg = candidateMode
+  const workingPkg = JSON.parse(readFileSync(packagePath, 'utf8'));
+  const committedPkg = candidateMode
     ? JSON.parse(command('git', ['show', 'HEAD:package.json'], { cwd: packageRoot }))
-    : JSON.parse(readFileSync(packagePath, 'utf8'));
+    : null;
+  if (candidateMode && !isDeepStrictEqual(workingPkg, committedPkg)) {
+    fail('candidate package metadata must match committed HEAD:package.json');
+  }
+  const pkg = committedPkg ?? workingPkg;
   const tag = `v${pkg.version}`;
   const fixtureMode = options['release-json'] !== undefined;
   const temp = fixtureMode ? null : mkdtempSync(join(tmpdir(), 'valley-release-contract-'));
