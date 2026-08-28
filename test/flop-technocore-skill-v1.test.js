@@ -222,6 +222,22 @@ test('runtime deviations return unavailable without accepting forged verifier ou
   }
 });
 
+test('the adapter-enforced V8 old-space limit is active in its verifier child', () => {
+  const nativeReport = native('message', message).stdout.toString('utf8');
+  const result = runMutatedCopy(({ fakeBinaryPath, adapterPath }) => replacePinnedBinary(
+    { fakeBinaryPath, adapterPath }, `#!/usr/bin/env node
+import v8 from 'node:v8';
+if (v8.getHeapStatistics().heap_size_limit <= 384 * 1024 * 1024) process.exitCode = 1;
+else process.stdout.write(${JSON.stringify(nativeReport)});
+`
+  ));
+  // A missing or ineffective NODE_OPTIONS cap would make the forged native
+  // result look valid. A capped child exits 1 and must fail closed instead.
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout.length, 0);
+  assert.equal(result.stderr.toString('utf8'), 'error: verifier unavailable\n');
+});
+
 test('timeout and per-invocation pin revalidation fail closed', () => {
   const timeout = runMutatedCopy(({ fakeBinaryPath, adapterPath }) => replacePinnedBinary(
     { fakeBinaryPath, adapterPath }, '#!/usr/bin/env node\nsetInterval(() => {}, 100);\n'
@@ -288,9 +304,9 @@ test('clean-room dogfood leaves files unchanged and adapter has no network/actio
   }
 });
 
-const hasStrace = spawnSync('strace', ['-V'], { encoding: 'utf8' }).status === 0;
-
-test('clean-room process trace shows no file writes or network syscalls', { skip: !hasStrace }, () => {
+test('clean-room process trace requires strace and shows no file writes or network syscalls', () => {
+  const straceVersion = spawnSync('strace', ['-V'], { encoding: 'utf8' });
+  assert.equal(straceVersion.status, 0, 'strace is a mandatory Gate C prerequisite');
   const temporary = mkdtempSync(join(tmpdir(), 'flop-technocore-trace-'));
   const trace = join(temporary, 'trace.log');
   try {

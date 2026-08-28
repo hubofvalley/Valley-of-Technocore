@@ -29,7 +29,11 @@ runtime-member paths and their SHA-256 values. Any missing file,
 symlink/path mismatch, byte mismatch, runtime mismatch, or failed check returns
 `unavailable` and starts no verifier. The child is bounded to 1 MiB stdin,
 64 KiB stdout, 16 KiB stderr, 5 seconds wall time, and a 128 MiB Node V8
-old-space budget. Total RSS requires a host cgroup or equivalent owner-pilot
+old-space budget. Gate C proves that cap in the actual adapter-launched child:
+on the pinned Node 24 runtime its reported V8 heap limit must be ≤384 MiB, so
+a missing or ineffective `NODE_OPTIONS` setting fails the test. Linux `strace`
+is mandatory for the no-write/no-network trace; a missing tracer fails Gate C,
+not skips it. Total RSS requires a host cgroup or equivalent owner-pilot
 control; the adapter does not claim to hard-cap it.
 
 The adapter maps only these outcomes: exact canonical exit-0 reports to
