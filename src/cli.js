@@ -30,6 +30,7 @@ Commands:
   receipt verify        normalise and verify one export [--format json|human]
   provenance create     package one captured signed request and matching response record
   provenance verify     verify one provenance bundle [--format json|human]
+  batch verify          verify NDJSON evidence, messages, or local receipts
 
 Legacy aliases: create-evidence, verify-evidence, verify-technocore-message
 Run valley-technocore <command> --help for command details.

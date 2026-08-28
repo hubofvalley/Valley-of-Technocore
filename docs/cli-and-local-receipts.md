@@ -10,6 +10,7 @@ valley-technocore evidence verify
 valley-technocore message verify
 valley-technocore receipt normalize
 valley-technocore receipt verify
+valley-technocore batch verify <evidence|message|receipt>
 valley-attestation verify
 ```
 
@@ -23,6 +24,18 @@ JSON and human verification reports use the same validation and exit codes:
 - `1`: unexpected internal failure
 
 Errors go to standard error and begin with `error:`. Help exits `0` without reading standard input.
+
+## Batch verification (NDJSON only)
+
+`batch verify` reads a bounded NDJSON stream from standard input. Select exactly one profile for the stream: `evidence`, `message`, or `receipt`. Receipt records use the same local normalisation contract as `receipt verify`; the other two profiles use their existing verifier contracts.
+
+```sh
+node ./bin/valley-technocore.js batch verify receipt < local-exports.ndjson
+```
+
+For each input line, standard output contains a canonical JSONL item record with a one-based `index`, profile, outcome, and either the ordinary verification report or a validation error. A final canonical JSONL summary gives `verified`, `invalid`, `malformed`, and `total` counts. Output order is input order.
+
+The exit code is `0` when every record verifies, `3` when one or more processable records are invalid, and `2` when one or more records are malformed; `2` takes precedence if both occur. This interface never accepts a directory, path, URL, or glob. It reads no files and does not perform HTTP, signing, key generation, wallet operations, or eligibility decisions.
 
 ## Normalise a local receipt export
 

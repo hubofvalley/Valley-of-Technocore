@@ -24,6 +24,7 @@ Given a complete local input, the CLI can:
 - derive Technocore signing bytes as `room|nonce|swept-text`, then verify a detached Ed25519 signature over those derived bytes;
 - normalise one bounded local receipt export into the `technocore.msg.v1` profile;
 - bind a captured signed request to the matching local response record in a deterministic provenance bundle; and
+- batch-verify supplied newline-delimited evidence, messages, or local receipt exports without opening paths or making network requests;
 - package already-supplied signed bytes into deterministic evidence JSON; and
 - show that changing input in a way that changes the derived signing bytes invalidates a detached signature.
 
@@ -124,6 +125,7 @@ valley-technocore receipt normalize
 valley-technocore receipt verify [--format json|human]
 valley-technocore provenance create
 valley-technocore provenance verify [--format json|human]
+valley-technocore batch verify <evidence|message|receipt>
 valley-attestation verify [--format json|human]
 ```
 
@@ -137,6 +139,14 @@ Legacy aliases remain available: `create-evidence`, `verify-evidence`, and `veri
 | `3` | Input was processable but its detached signature or payload hash was invalid. |
 
 Default output, and explicit `--format json` output, is one canonical JSON object on stdout without a trailing newline. `--format human` is available only for verification and report commands. Evidence creation and receipt normalisation always emit canonical JSON artefacts; they reject `--format human`.
+
+`batch verify` is deliberately different: it consumes NDJSON from standard input and emits one canonical JSON object per line (JSONL), ending with a summary record. It accepts a fixed profile for the whole stream: `evidence`, `message`, or `receipt`. It does not accept a directory or any path, so every byte remains explicitly supplied through standard input.
+
+```sh
+node ./bin/valley-technocore.js batch verify message < supplied-messages.ndjson
+```
+
+Each item record has its one-based `index`, `profile`, `outcome` (`verified`, `invalid`, or `malformed`), and either the existing verifier `report` or a bounded validation `error`. The final record has `type: "summary"` and deterministic totals. Exit `0` means every record verified; exit `3` means one or more processable records were invalid; exit `2` means one or more records were malformed (and takes precedence over exit `3`). No batch result establishes identity, source authenticity, server inclusion, eligibility, reward, or authority.
 
 ## Offline and safety boundary
 
