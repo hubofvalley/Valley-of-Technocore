@@ -124,6 +124,29 @@ test('local stable contract validates HEAD without GitHub access', () => {
     const stableCommit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: directory, encoding: 'utf8' });
     assert.equal(stableCommit.status, 0, stableCommit.stderr);
     assert.deepEqual(JSON.parse(result.stdout), { version: '0.2.0', tag: 'v0.2.0', channel: 'stable', commit: stableCommit.stdout.trim(), archive: archiveName, sha256: digest, attestation: 'not-present' });
+
+    writeFileSync(packagePath, '{"version":"9.9.9","private":true}\n');
+    const dirtyMetadata = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(dirtyMetadata.status, 1);
+    assert.match(dirtyMetadata.stderr, /local package metadata must match committed HEAD:package\.json/u);
+
+    writeFileSync(packagePath, '{"version":"0.2.0","private":true}\n');
+    const wrongName = join(directory, 'wrong-name.tar');
+    writeFileSync(wrongName, archive.stdout);
+    const wrongFilename = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', wrongName], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(wrongFilename.status, 1);
+    assert.match(wrongFilename.stderr, /must be named valley-of-technocore-v0\.2\.0\.tar/u);
+
+    writeFileSync(join(directory, `${archiveName}.sha256`), `${'0'.repeat(64)}  ${archiveName}\n`);
+    const badManifest = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(badManifest.status, 1);
+    assert.match(badManifest.stderr, /checksum manifest/u);
+
+    writeFileSync(join(directory, `${archiveName}.sha256`), `${digest}  ${archiveName}\n`);
+    writeFileSync(archivePath, Buffer.concat([archive.stdout, Buffer.from('tamper')]));
+    const badArchive = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(badArchive.status, 1);
+    assert.match(badArchive.stderr, /deterministic archive/u);
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
