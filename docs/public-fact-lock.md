@@ -1,6 +1,6 @@
 # Public fact lock — v0.1.0-rc.6
 
-This page defines the factual boundary for public communication about Valley of Technocore `v0.1.0-rc.6` (`cd179a731a30ac6d16b1bb93b9ac547a2f143d79`). It is not launch copy and must not be treated as a stable or final v1 fact sheet.
+This is a historical factual boundary for Valley of Technocore `v0.1.0-rc.6` (`cd179a731a30ac6d16b1bb93b9ac547a2f143d79`). It is not launch copy and must not be treated as the current stable v1 fact sheet. For the published stable `v0.1.0` contract, see [release readiness](release-readiness.md).
 
 ## Required framing
 
