@@ -67,4 +67,3 @@ protection, contribution, recognition, eligibility, rewards, trust, or any
 authority. It does not prove that a DID is controlled by a person or that a
 response came from a server. The skill must explicitly refuse requests to
 infer, register, grant, guarantee, or act on any of those claims.
-
