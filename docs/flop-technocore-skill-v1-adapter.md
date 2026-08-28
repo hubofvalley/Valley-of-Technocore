@@ -1,8 +1,8 @@
 # FLOP Technocore Skill v1 — Gate B adapter and Gate C evidence
 
 Gate A was accepted by the owner. This branch contains the local Gate B
-adapter and Gate C evidence only; no installation, pilot, distribution, or
-public action has occurred.
+adapter and Gate C evidence. The owner-approved local cgroup pilot passed; no
+installation, distribution, or public action has occurred.
 
 ## Adapter boundary
 
@@ -78,8 +78,17 @@ git diff --check main...HEAD
 ```
 
 A single failed check leaves the adapter disabled until the complete sequence
-passes. Before owner pilot, add and verify a host cgroup or equivalent total
-RSS control; the adapter only sets the child Node V8 old-space cap.
+passes. The owner-approved one-shot pilot uses the disposable cgroup-v2 helper
+below. It does not install a service or retain a unit:
+
+```bash
+bash scripts/run-flop-technocore-pilot.sh
+```
+
+The helper proves the live memory/swap/pid limits, parent and verifier-child
+scope inheritance, no cgroup OOM event, peak accounting, exact direct-CLI
+equivalence, and post-exit scope collection. The adapter only sets the child
+Node V8 old-space cap; the cgroup bounds total descendant memory for this pilot.
 
 Dogfood inputs are checked-in fixtures and manually supplied local artefacts
 only. No fetch, package installation, GitHub, network, browser, signing, DID,

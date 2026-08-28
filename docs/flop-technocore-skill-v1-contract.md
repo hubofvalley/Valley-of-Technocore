@@ -1,6 +1,6 @@
 # FLOP Technocore Skill Contract v1
 
-Status: Gate B/C local implementation complete; owner pilot review pending.
+Status: Gate B/C complete; owner-approved local pilot passed.
 
 ## Purpose and pin
 
@@ -53,8 +53,13 @@ Enforce before/around invocation: input ≤1 MiB; output stdout ≤64 KiB; stder
 budget 128 MiB. Gate C must prove the cap in the adapter-launched child (V8
 heap limit ≤384 MiB on the pinned Node 24 runtime); source inspection is insufficient. Linux `strace` is a
 mandatory Gate C prerequisite for no-write/no-network evidence: its absence or
-failure closes the gate. Total process RSS requires a host cgroup or equivalent
-owner-pilot control; it is not claimed as an adapter-enforced limit. There is
+failure closes the gate. The owner-approved local pilot ran the adapter and
+its one verifier child in a disposable cgroup-v2 scope with `MemoryMax=384 MiB`,
+`MemorySwapMax=0`, and `TasksMax=32`. It must prove controller values,
+descendant scope membership, zero OOM events, nonzero peak usage, exact direct
+CLI equivalence, and scope removal. This is pilot evidence only, not a
+persistent installation. Evidence: `memory.peak=30,752,768` bytes, no OOM or
+OOM-kill event, exact direct-CLI output, and collected scope. There is
 no child process except the pinned Node CLI, no inherited task environment,
 and no network sockets. The host kills and rejects a run that exceeds any
 adapter-enforced limit. The CLI's profile-specific JSON and exit semantics are recorded in the

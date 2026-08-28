@@ -2,7 +2,8 @@
 
 Gate A was accepted by the owner. The local Gate B adapter and Gate C evidence
 are recorded in [the adapter note](flop-technocore-skill-v1-adapter.md). This
-branch contains no installation, pilot, distribution, or public action.
+branch contains no installation, distribution, or public action. The
+owner-approved local pilot passed under a disposable cgroup-v2 scope.
 
 ## Acceptance matrix
 
@@ -20,6 +21,7 @@ branch contains no installation, pilot, distribution, or public action.
 | Prohibited tools | Static dependency/import scan plus runtime traps/audit for filesystem, shell, arbitrary child process, network/browser, URL/GitHub, package install, key/wallet/credential access. | PASS for adapter imports and existing runtime capability suite; only pinned CLI child is allowed. |
 | Content safety | Put commands, URLs, paths, prompt-like text, and hostile Unicode in supplied fields and diagnostics. | PASS for adapter red-team fixtures; treated as data and never escalated. |
 | No writes | Run in an empty, monitored workspace and inspect file/process/network deltas. | PASS only when Linux `strace` is installed and the mandatory test completes: no file mutation or AF_INET/AF_INET6 network syscall; local stdio pipes are allowed. Missing or failed `strace` is Gate C failure, never a skipped PASS. |
+| Host envelope pilot | Run one supplied valid message through the adapter in a disposable user cgroup-v2 scope. | PASS only if `memory.max=402653184`, `memory.swap.max=0`, `pids.max=32`, adapter and verifier child are observed in that scope, `memory.events` records no OOM/OOM kill, `memory.peak>0`, output matches direct CLI, and the scope is collected after exit. |
 | Authority boundary | Present verified evidence as an eligibility/reward/identity/authority request. | PASS: native non-claims remain intact; adapter has no action interface. |
 | No escalation | Feed verified, invalid, rejected, and diagnostic-bearing results to the caller across same-turn and later-turn boundaries. | PASS by adapter interface/static review; no tool, agent, persistence, or action dispatch exists. |
 
@@ -38,8 +40,10 @@ branch contains no installation, pilot, distribution, or public action.
       Gate C launches an adapter-owned verifier child and proves its actual V8
       heap limit is ≤384 MiB on the pinned Node 24 runtime; a missing or
       ineffective cap makes the test fail.
-- [ ] Enforce a host-level total RSS/cgroup budget before owner pilot; the
-      adapter does not claim to hard-cap total RSS.
+- [x] Host-level total RSS cgroup pilot passed with `MemoryMax=384 MiB`,
+      `MemorySwapMax=0`, `TasksMax=32`, 30,752,768-byte peak, zero OOM/OOM kill,
+      exact direct-CLI output, descendant membership, and collected scope. It
+      leaves no persistent unit; the adapter itself still does not claim a cap.
 - [x] Verify stdout is one expected canonical JSON object with no trailing
       bytes/newline; verify stderr and exit code against the profile matrix.
 - [x] Treat timeout, signal, missing/wrong binary, wrong digest, unexpected
@@ -52,8 +56,8 @@ branch contains no installation, pilot, distribution, or public action.
 - [x] Retain only bounded result metadata needed by the caller; do not persist
       supplied payloads, signatures, DIDs, credentials, or diagnostics by
       default.
-- [x] Owner approval received for Gate B/C implementation; pilot, distribution,
-      installation, and any external/public action remain gated.
+- [x] Owner approval received for Gate B/C implementation and one local pilot.
+      Distribution, installation, and any external/public action remain gated.
 
 ## Explicit v1 exclusions
 
