@@ -20,17 +20,18 @@ function report(result) {
   return JSON.parse(result.stdout);
 }
 
-test('universal verify classifies all five supported input families', () => {
+test('universal verify classifies all supported input representations', () => {
   const receipt = { room: message.room, did: message.did, nonce: message.nonce, text: message.text, signature: message.signature_b64u };
+  const envelope = { room: message.room, receipt: { signer_did: message.did, nonce: message.nonce, message: message.text, signature: message.signature_b64u } };
   const provenance = JSON.parse(spawnSync(process.execPath, ['bin/valley-technocore.js', 'provenance', 'create'], {
     cwd: root, input: JSON.stringify(capture), encoding: 'utf8'
   }).stdout);
   for (const [kind, input] of [
-    ['evidence', evidence], ['message', message], ['receipt', receipt], ['provenance_capture', capture], ['provenance_bundle', provenance], ['release_attestation', attestation]
+    ['evidence', evidence], ['message', message], ['receipt-flat', receipt], ['receipt-envelope', envelope], ['provenance_capture', capture], ['provenance_bundle', provenance], ['release_attestation', attestation]
   ]) {
     const result = cli([], input);
     assert.equal(result.status, 0, kind);
-    assert.equal(report(result).classification, kind);
+    assert.equal(report(result).classification, kind.startsWith('receipt-') ? 'receipt' : kind);
     assert.equal(report(result).failure_category, 'none');
   }
 });
@@ -61,6 +62,7 @@ test('missing signatures and receipt normalisation failures identify safe recove
     cwd: root, input: JSON.stringify(missing), encoding: 'utf8'
   });
   assert.equal(missingResult.status, 2); assert.equal(missingResult.stdout, '');
+  assert.match(missingResult.stderr, /^classification: receipt$/mu);
   assert.match(missingResult.stderr, /^failure category: missing_signature$/mu);
   assert.match(missingResult.stderr, /^next safe action: Supply the detached signature/mu);
 
@@ -76,21 +78,21 @@ test('JSON, schema, provenance mismatch, ambiguous, and unknown failures are bou
   const malformed = spawnSync(process.execPath, ['bin/valley-technocore.js', 'verify', '--format', 'human'], {
     cwd: root, input: '{', encoding: 'utf8'
   });
-  assert.equal(malformed.status, 2); assert.match(malformed.stderr, /^failure category: json$/mu);
+  assert.equal(malformed.status, 2); assert.match(malformed.stderr, /^classification: unknown$/mu); assert.match(malformed.stderr, /^failure category: json$/mu);
 
   const schema = cli(['--format', 'human'], { ...message, schema: 'unknown.profile.v1' });
-  assert.equal(schema.status, 2); assert.match(schema.stderr, /^failure category: schema$/mu);
+  assert.equal(schema.status, 2); assert.match(schema.stderr, /^classification: message$/mu); assert.match(schema.stderr, /^failure category: schema$/mu);
 
   const missingAttestation = structuredClone(attestation); delete missingAttestation.signature;
   const missingAttestationResult = cli(['--format', 'human'], missingAttestation);
-  assert.equal(missingAttestationResult.status, 2); assert.match(missingAttestationResult.stderr, /^failure category: missing_signature$/mu);
+  assert.equal(missingAttestationResult.status, 2); assert.match(missingAttestationResult.stderr, /^classification: release_attestation$/mu); assert.match(missingAttestationResult.stderr, /^failure category: missing_signature$/mu);
 
   const provenance = JSON.parse(spawnSync(process.execPath, ['bin/valley-technocore.js', 'provenance', 'create'], {
     cwd: root, input: JSON.stringify(capture), encoding: 'utf8'
   }).stdout);
   provenance.response.posted.text += '!';
   const mismatch = cli(['--format', 'human'], provenance);
-  assert.equal(mismatch.status, 2); assert.match(mismatch.stderr, /^failure category: provenance_mismatch$/mu);
+  assert.equal(mismatch.status, 2); assert.match(mismatch.stderr, /^classification: provenance_bundle$/mu); assert.match(mismatch.stderr, /^failure category: provenance_mismatch$/mu);
 
   const ambiguous = { ...message, source: {}, attribution: {}, authority: 'none' };
   const ambiguousResult = cli(['--format', 'human'], ambiguous);

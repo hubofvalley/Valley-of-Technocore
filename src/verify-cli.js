@@ -14,7 +14,7 @@ const ATTESTATION_SCHEMA = 'gv.valley-of-technocore.release-attestation/1';
 const RECEIPT_KEYS = new Set(['room', 'receipt', 'did', 'signer_did', 'nonce', 'text', 'message', 'signature', 'signature_b64u']);
 const USAGE = `usage: valley-technocore verify [--format json|human]
 Reads exactly one supported JSON object from stdin and classifies it as evidence, message, receipt, provenance, or release attestation.
-No paths, directories, URLs, network resources, keys, or writes are used.
+No paths, directories, URLs, network resources, private keys, key generation, signing, or writes are used; supplied public-key material is verified locally.
 `;
 
 const CATEGORY = {
@@ -132,9 +132,9 @@ function universalError(kind, category, message) {
   return { classification: kind ?? null, error: message, failure_category: category, next_safe_action: details.action, report: null };
 }
 
-function humanError(category, message) {
+function humanError(kind, category, message) {
   const details = CATEGORY[category];
-  return `failure category: ${category}\ndiagnostic: ${details.diagnostic}\nnext safe action: ${details.next}\nerror: ${message}\n`;
+  return `classification: ${kind ?? 'unknown'}\nfailure category: ${category}\ndiagnostic: ${details.diagnostic}\nnext safe action: ${details.next}\nerror: ${message}\n`;
 }
 
 async function readInput(stream) {
@@ -178,7 +178,7 @@ export async function runUniversalVerify(args, stdin, stdout, stderr) {
   } catch (error) {
     const message = error instanceof Error ? error.message : 'internal failure';
     const category = categoryForError(kind, message, stage, input, error);
-    if (formatArgs.format === 'human') stderr.write(humanError(category, message));
+    if (formatArgs.format === 'human') stderr.write(humanError(kind, category, message));
     else writeReport(stdout, universalError(kind, category, message), 'json');
     return error instanceof InputError || error instanceof AttestationInputError ? 2 : 1;
   }

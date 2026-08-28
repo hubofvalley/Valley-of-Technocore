@@ -19,6 +19,8 @@ valley-attestation verify
 
 `verify` is the single-object first-run entrypoint. It classifies one supplied object before routing to the existing evidence, message, receipt, provenance, or release-attestation verifier. Its machine output is a new wrapper with the unchanged native report nested under `report`; profile-specific commands retain their existing machine schemas. Provenance captures and bundles are classified separately because they use different existing paths.
 
+The stable output fields, error taxonomy, and exit matrix for all commands are frozen in the [integrator contract](integrator-contract.md). The three captured first-run receipt representations have a reproducible clean-shell record in the [P0.5 proof report](first-run-proof-p05.md).
+
 The original `create-evidence`, `verify-evidence`, and `verify-technocore-message` names remain supported. JSON remains the default machine output. Verification commands accept `--format human` for a line-oriented report intended for a person. Artefact-producing commands (`evidence create` and `receipt normalize`) always write canonical JSON and reject `--format human`; their output must remain suitable for later verification.
 
 JSON and human verification reports use the same validation and exit codes:
@@ -28,7 +30,7 @@ JSON and human verification reports use the same validation and exit codes:
 - `3`: processable input with an invalid signature or payload hash
 - `1`: unexpected internal failure
 
-Errors go to standard error and begin with `error:`. Help exits `0` without reading standard input.
+For profile-specific commands, malformed input, unsupported options, and runtime failures go to standard error and begin with `error:`; processable verification results stay on standard output, including exit-`3` reports. Universal `verify` is the deliberate exception: JSON input errors are canonical wrapper objects on standard output, while human input errors go to standard error and begin with `classification:`. Help exits `0` without reading standard input.
 
 ## Batch verification (NDJSON only)
 

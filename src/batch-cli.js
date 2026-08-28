@@ -10,7 +10,7 @@ const PROFILES = new Set(['evidence', 'message', 'receipt']);
 const USAGE = `usage: valley-technocore batch verify <evidence|message|receipt>
 Reads bounded newline-delimited JSON (NDJSON) from stdin and emits canonical JSONL.
 Each input line produces one item record, followed by one summary record.
-No paths, directories, network resources, keys, or writes are used.
+No paths, directories, network resources, private keys, key generation, signing, or writes are used; supplied public-key material is verified locally.
 `;
 
 function writeLine(stream, value) {
