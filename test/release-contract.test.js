@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -101,4 +101,16 @@ test('release candidate contract binds committed metadata and archive filename',
     assert.equal(wrongFilename.status, 1);
     assert.match(wrongFilename.stderr, /must be named valley-of-technocore-v0\.2\.0-rc\.1\.tar/u);
   } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
+test('CI selects local candidate mode for prerelease metadata', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/test.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /package_version=.*package\.json/u);
+  assert.ok(workflow.includes('if [[ "$package_version" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$ ]]; then'));
+  assert.match(workflow, /git archive --format=tar --prefix="/u);
+  assert.match(workflow, /HEAD > "\$archive_dir\/\$archive_name"/u);
+  assert.match(workflow, /sha256sum "\$archive_name" > "\$archive_name\.sha256"/u);
+  assert.match(workflow, /--mode candidate/u);
+  assert.match(workflow, /--archive "\$archive_dir\/\$archive_name"/u);
+  assert.match(workflow, /else\s+npm run check-release-contract\s+fi/u);
 });

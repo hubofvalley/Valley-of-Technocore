@@ -83,7 +83,27 @@ npm run check-release-contract
 For this local release candidate, use the offline candidate mode shown above;
 it does not call `gh` and does not require a tag.
 
-The checker is deterministic and contains no AI/model step. It reads package/tag data, fetches release metadata and assets through `gh`, reproduces the tagged archive, compares bytes and digest, and validates an attached optional attestation. It returns non-zero on any contract mismatch. GitHub Actions runs the same command on pull requests and pushes to `main`.
+The checker is deterministic and contains no AI/model step. The release-contract
+job in `.github/workflows/test.yml` selects the contract from package metadata:
+
+- For an `X.Y.Z-rc.N` package, CI creates the archive and exact checksum in the
+  runner temporary directory, then runs the local check:
+
+  ```bash
+  npm run check-release-contract -- \
+    --mode candidate \
+    --archive "$archive_dir/$archive_name"
+  ```
+
+  This validates the checked-out `HEAD` and does not call `gh`, require a tag,
+  or claim that an untagged RC is a GitHub prerelease.
+- For a stable `X.Y.Z` package, CI runs `npm run check-release-contract` with
+  `GH_TOKEN`. That is the post-tag remote contract: it fetches GitHub release
+  metadata/assets, reproduces the tagged archive, compares bytes and digest,
+  and validates an attached optional attestation.
+
+Both modes return non-zero on any contract mismatch. The local untagged RC
+check and post-tag remote prerelease validation are deliberately separate.
 
 Release facts are mutable external state. Record the command output and time
 when making a release decision; do not infer future-release facts from the
