@@ -69,7 +69,7 @@ test('every runtime module reachable from either entrypoint stays capability-bou
   const runtimeFiles = reachableRuntimeFiles([CLI, ATTESTATION_CLI]);
   assert.deepEqual(runtimeFiles.map((file) => file.replace(`${ROOT_DIR}/`, '')).sort(), [
     'bin/valley-attestation.js', 'bin/valley-technocore.js', 'src/attestation.js', 'src/cli.js', 'src/format.js',
-    'src/receipt-cli.js', 'src/receipt.js', 'src/technocore-message.js'
+    'src/provenance.js', 'src/receipt-cli.js', 'src/receipt.js', 'src/technocore-message.js'
   ]);
   for (const file of runtimeFiles) {
     const source = readFileSync(file, 'utf8');
@@ -109,13 +109,32 @@ test('verify-evidence is environment-invariant and writes no files', () => {
 test('package has zero runtime dependencies and only declared runtime files', () => {
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
   assert.equal(pkg.dependencies, undefined); assert.equal(pkg.optionalDependencies, undefined);
-  assert.deepEqual(readdirSync(new URL('../src', import.meta.url)).sort(), ['attestation.js', 'cli.js', 'format.js', 'receipt-cli.js', 'receipt.js', 'technocore-message.js']);
+  assert.deepEqual(readdirSync(new URL('../src', import.meta.url)).sort(), ['attestation.js', 'cli.js', 'format.js', 'provenance.js', 'receipt-cli.js', 'receipt.js', 'technocore-message.js']);
   assert.deepEqual(readdirSync(new URL('../bin', import.meta.url)).sort(), ['valley-attestation.js', 'valley-technocore.js']);
 });
 
 test('Technocore message verification is environment-invariant and writes no files', () => {
   const first = runInEmptyDirectory({ PATH: '/nonexistent', HOME: '/nonexistent', TZ: 'UTC', LANG: 'C', SECRET_TOKEN: 'must-not-appear' }, 'verify-technocore-message', TECHNOCORE_MESSAGE);
   const second = runInEmptyDirectory({ PATH: '/tmp', HOME: '/tmp', TZ: 'Asia/Jakarta', LANG: 'id_ID.UTF-8' }, 'verify-technocore-message', TECHNOCORE_MESSAGE);
+  assert.equal(first.result.status, 0); assert.equal(second.result.status, 0);
+  assert.equal(first.result.stdout, second.result.stdout);
+  assert.deepEqual(first.before, []); assert.deepEqual(first.after, []);
+  assert.deepEqual(second.before, []); assert.deepEqual(second.after, []);
+  assert.doesNotMatch(first.result.stdout + first.result.stderr, /must-not-appear/u);
+});
+
+test('provenance bundle construction is environment-invariant and writes no files', () => {
+  const capture = readFileSync(new URL('../fixtures/technocore-provenance-capture-v1.json', import.meta.url), 'utf8');
+  const run = (env) => {
+    const cwd = mkdtempSync(join(tmpdir(), 'valley-technocore-provenance-boundary-'));
+    try {
+      const before = readdirSync(cwd);
+      const result = spawnSync(process.execPath, [CLI.pathname, 'provenance', 'create'], { cwd, input: capture, encoding: 'utf8', env });
+      return { result, before, after: readdirSync(cwd) };
+    } finally { rmSync(cwd, { recursive: true, force: true }); }
+  };
+  const first = run({ PATH: '/nonexistent', HOME: '/nonexistent', TZ: 'UTC', LANG: 'C', SECRET_TOKEN: 'must-not-appear' });
+  const second = run({ PATH: '/tmp', HOME: '/tmp', TZ: 'Asia/Jakarta', LANG: 'id_ID.UTF-8' });
   assert.equal(first.result.status, 0); assert.equal(second.result.status, 0);
   assert.equal(first.result.stdout, second.result.stdout);
   assert.deepEqual(first.before, []); assert.deepEqual(first.after, []);

@@ -15,7 +15,7 @@ test('npm pack installs cleanly and exposes working binaries', () => {
     assert.equal(packed.status, 0, packed.stderr);
     const metadata = JSON.parse(packed.stdout)[0];
     const names = metadata.files.map((entry) => entry.path).sort();
-    assert.ok(names.includes('bin/valley-technocore.js')); assert.ok(names.includes('scripts/check-release-contract.mjs')); assert.ok(names.includes('src/receipt.js'));
+    assert.ok(names.includes('bin/valley-technocore.js')); assert.ok(names.includes('scripts/check-release-contract.mjs')); assert.ok(names.includes('src/receipt.js')); assert.ok(names.includes('src/provenance.js'));
     assert.ok(names.includes('docs/cli-and-local-receipts.md'));
     assert.ok(!names.some((name) => name.startsWith('test/') || name.startsWith('fixtures/')));
     const prefix = join(temp, 'install');

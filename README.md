@@ -22,6 +22,7 @@ Given a complete local input, the CLI can:
 
 - derive Technocore signing bytes as `room|nonce|swept-text`, then verify a detached Ed25519 signature over those derived bytes;
 - normalise one bounded local receipt export into the `technocore.msg.v1` profile;
+- bind a captured signed request to the matching local response record in a deterministic provenance bundle; and
 - package already-supplied signed bytes into deterministic evidence JSON; and
 - show that changing input in a way that changes the derived signing bytes invalidates a detached signature.
 
@@ -96,6 +97,18 @@ The human report deliberately lists its non-claims, including `identity_not_esta
 
 This distinction matters because current documented Technocore room-read responses do not return detached signatures. A live read can be a separate source of message fields, but it cannot by itself recreate a complete offline verification input.
 
+## Build a local provenance bundle
+
+When another, separate posting tool has already captured both its signed request and the response record it received, package that pair without retrying the request or contacting Technocore:
+
+```bash
+node ./bin/valley-technocore.js provenance create < captured-request-and-response.json > provenance.json
+node ./bin/valley-technocore.js provenance verify --format human < provenance.json
+printf 'exit: %s\n' "$?"
+```
+
+The capture has exactly this shape: a canonical `technocore.msg.v1` request plus the response's matching `posted` record and HTTP `200` status. The CLI requires the DID, nonce, and swept text to match exactly. A valid bundle proves only that this supplied request signature verifies and that the supplied response record matches it. It does not prove that Technocore included, retained, or authorised the record.
+
 ## Commands and exit codes
 
 ```text
@@ -104,6 +117,8 @@ valley-technocore evidence verify [--format json|human]
 valley-technocore message verify [--format json|human]
 valley-technocore receipt normalize
 valley-technocore receipt verify [--format json|human]
+valley-technocore provenance create
+valley-technocore provenance verify [--format json|human]
 valley-attestation verify [--format json|human]
 ```
 

@@ -14,7 +14,7 @@ function run(entrypoint, args = [], input = '{not JSON') {
 test('CLI help is discoverable, complete, and never reads stdin', () => {
   const rootHelp = run('bin/valley-technocore.js', ['--help']);
   assert.equal(rootHelp.status, 0); assert.equal(rootHelp.stderr, '');
-  for (const command of ['evidence', 'message', 'receipt', 'create-evidence', 'verify-evidence', 'verify-technocore-message']) assert.match(rootHelp.stdout, new RegExp(`\\b${command}\\b`, 'u'));
+  for (const command of ['evidence', 'message', 'receipt', 'provenance', 'create-evidence', 'verify-evidence', 'verify-technocore-message']) assert.match(rootHelp.stdout, new RegExp(`\\b${command}\\b`, 'u'));
 
   for (const command of ['create-evidence', 'verify-evidence', 'verify-technocore-message']) {
     const help = run('bin/valley-technocore.js', [command, '--help']);
@@ -27,7 +27,7 @@ test('CLI help is discoverable, complete, and never reads stdin', () => {
   const attestationHelp = run('bin/valley-attestation.js', ['--help']);
   assert.equal(attestationHelp.status, 0); assert.equal(attestationHelp.stderr, '');
   assert.match(attestationHelp.stdout, /usage: valley-attestation/u);
-  for (const group of ['evidence', 'message', 'receipt']) {
+  for (const group of ['evidence', 'message', 'receipt', 'provenance']) {
     const help = run('bin/valley-technocore.js', [group, '--help']);
     assert.equal(help.status, 0, group); assert.equal(help.stderr, '', group); assert.match(help.stdout, new RegExp(`valley-technocore ${group}`, 'u'));
   }
@@ -35,6 +35,11 @@ test('CLI help is discoverable, complete, and never reads stdin', () => {
     const help = run('bin/valley-technocore.js', ['receipt', command, '--help']);
     assert.equal(help.status, 0, command); assert.equal(help.stderr, '', command);
     assert.match(help.stdout, /valley-technocore receipt/u);
+  }
+  for (const command of ['create', 'verify']) {
+    const help = run('bin/valley-technocore.js', ['provenance', command, '--help']);
+    assert.equal(help.status, 0, command); assert.equal(help.stderr, '', command);
+    assert.match(help.stdout, /valley-technocore provenance/u);
   }
 });
 

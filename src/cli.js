@@ -28,6 +28,8 @@ Commands:
   message verify        verify a technocore.msg.v1 message [--format json|human]
   receipt normalize     normalise one local receipt export as canonical JSON
   receipt verify        normalise and verify one export [--format json|human]
+  provenance create     package one captured signed request and matching response record
+  provenance verify     verify one provenance bundle [--format json|human]
 
 Legacy aliases: create-evidence, verify-evidence, verify-technocore-message
 Run valley-technocore <command> --help for command details.
