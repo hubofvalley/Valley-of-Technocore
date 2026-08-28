@@ -11,6 +11,7 @@ An independent, unofficial tool by Grand Valley.
 - [What this verifies](#what-this-verifies)
 - [Quick demo](#quick-demo)
 - [Verify your own local receipt export](#verify-your-own-local-receipt-export)
+- [Public compatibility corpus](#public-compatibility-corpus)
 - [Read the result correctly](#read-the-result-correctly)
 - [Commands and exit codes](#commands-and-exit-codes)
 - [Offline and safety boundary](#offline-and-safety-boundary)
@@ -88,6 +89,10 @@ The normaliser accepts one object in these bounded shapes:
 ```
 
 It also accepts canonical `technocore.msg.v1` input. It rejects unknown fields, ambiguous collections, and a missing detached signature. For the complete local-receipt contract, see [CLI and local receipt workflow](docs/cli-and-local-receipts.md).
+
+## Public compatibility corpus
+
+The checked-in [compatibility corpus](fixtures/technocore-msg-v1-compatibility.json) pins Unicode sweep, byte-exact NFC, maximum nonce, and malformed-input boundaries. It is useful for independent implementations and remains entirely offline. See [its contract and limits](docs/compatibility-corpus.md).
 
 ## Read the result correctly
 
