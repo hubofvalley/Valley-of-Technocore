@@ -21,6 +21,8 @@ It does not fetch a server, replay a request, or prove server inclusion.
 `;
 
 function fail(message) { throw new InputError(message); }
+export class ProvenanceMismatchError extends InputError {}
+function mismatch(message) { throw new ProvenanceMismatchError(message); }
 
 function exactKeys(value, expected, label) {
   if (!value || Array.isArray(value) || typeof value !== 'object') fail(`${label} must be an object`);
@@ -44,9 +46,9 @@ function validateResponse(response, request) {
   if (response.http_status !== 200) fail('response http_status must be 200');
   exactKeys(response.posted, ['seq', 'from', 'nonce', 'text'], 'response posted');
   validatePositiveSequence(response.posted.seq);
-  if (response.posted.from !== request.did) fail('response posted from does not match request did');
-  if (response.posted.nonce !== request.nonce) fail('response posted nonce does not match request nonce');
-  if (response.posted.text !== sweepText(request.text)) fail('response posted text does not match swept request text');
+  if (response.posted.from !== request.did) mismatch('response posted from does not match request did');
+  if (response.posted.nonce !== request.nonce) mismatch('response posted nonce does not match request nonce');
+  if (response.posted.text !== sweepText(request.text)) mismatch('response posted text does not match swept request text');
 }
 
 function validateCapture(capture) {

@@ -10,6 +10,7 @@ An independent, unofficial tool by Grand Valley.
 
 - [What this verifies](#what-this-verifies)
 - [Quick demo](#quick-demo)
+- [First-run universal verification](docs/first-run-flow.md)
 - [Verify your own local receipt export](#verify-your-own-local-receipt-export)
 - [Public compatibility corpus](#public-compatibility-corpus)
 - [Read the result correctly](#read-the-result-correctly)
@@ -29,6 +30,17 @@ Given a complete local input, the CLI can:
 - show that changing input in a way that changes the derived signing bytes invalidates a detached signature.
 
 It cannot establish source authenticity, DID ownership, authorship beyond control of the supplied key, server inclusion, recency, replay protection, contribution, recognition, eligibility, rewards, or authority.
+
+## First-run universal verification
+
+For a first local check, use the single stdin-only entrypoint:
+
+```bash
+node ./bin/valley-technocore.js verify --format human \
+  < fixtures/technocore-msg-v1-gauntlet.json
+```
+
+It deterministically classifies one supplied object as evidence, a canonical message, a local receipt export, provenance, or a release attestation, then routes it to the existing offline verifier. Unknown or ambiguous shapes exit `2`; processable cryptographic failures exit `3`. The human report names the failure category and next safe action. See the [first-run verification flow](docs/first-run-flow.md) for the exact categories and limits.
 
 ## Quick demo
 
@@ -118,6 +130,7 @@ The capture has exactly this shape: a canonical `technocore.msg.v1` request plus
 ## Commands and exit codes
 
 ```text
+valley-technocore verify [--format json|human]
 valley-technocore evidence create
 valley-technocore evidence verify [--format json|human]
 valley-technocore message verify [--format json|human]

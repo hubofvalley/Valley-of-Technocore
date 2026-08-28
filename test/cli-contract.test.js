@@ -14,7 +14,7 @@ function run(entrypoint, args = [], input = '{not JSON') {
 test('CLI help is discoverable, complete, and never reads stdin', () => {
   const rootHelp = run('bin/valley-technocore.js', ['--help']);
   assert.equal(rootHelp.status, 0); assert.equal(rootHelp.stderr, '');
-  for (const command of ['evidence', 'message', 'receipt', 'provenance', 'batch', 'create-evidence', 'verify-evidence', 'verify-technocore-message']) assert.match(rootHelp.stdout, new RegExp(`\\b${command}\\b`, 'u'));
+  for (const command of ['verify', 'evidence', 'message', 'receipt', 'provenance', 'batch', 'create-evidence', 'verify-evidence', 'verify-technocore-message']) assert.match(rootHelp.stdout, new RegExp(`\\b${command}\\b`, 'u'));
 
   for (const command of ['create-evidence', 'verify-evidence', 'verify-technocore-message']) {
     const help = run('bin/valley-technocore.js', [command, '--help']);

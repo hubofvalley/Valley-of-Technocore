@@ -16,7 +16,7 @@ test('npm pack installs cleanly and exposes working binaries', () => {
     const metadata = JSON.parse(packed.stdout)[0];
     const names = metadata.files.map((entry) => entry.path).sort();
     assert.ok(names.includes('bin/valley-technocore.js')); assert.ok(names.includes('scripts/check-release-contract.mjs')); assert.ok(names.includes('src/receipt.js')); assert.ok(names.includes('src/provenance.js'));
-    assert.ok(names.includes('docs/cli-and-local-receipts.md'));
+    assert.ok(names.includes('docs/cli-and-local-receipts.md')); assert.ok(names.includes('docs/first-run-flow.md'));
     assert.ok(!names.some((name) => name.startsWith('test/') || name.startsWith('fixtures/')));
     const prefix = join(temp, 'install');
     const installed = spawnSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--prefix', prefix, join(temp, metadata.filename)], { encoding: 'utf8' });

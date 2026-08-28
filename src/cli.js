@@ -23,6 +23,7 @@ const WEAK_KEYS = new Set([
 const ROOT_USAGE = `usage: valley-technocore <command>
 
 Commands:
+  verify                 classify and verify one supported JSON object [--format json|human]
   evidence create       package supplied signed bytes as canonical JSON
   evidence verify       verify packaged evidence [--format json|human]
   message verify        verify a technocore.msg.v1 message [--format json|human]

@@ -5,14 +5,19 @@ The verifier stays offline and stateless. It reads one JSON object from standard
 ## Command hierarchy
 
 ```text
+valley-technocore verify [--format json|human]
 valley-technocore evidence create
 valley-technocore evidence verify
 valley-technocore message verify
 valley-technocore receipt normalize
 valley-technocore receipt verify
+valley-technocore provenance create
+valley-technocore provenance verify
 valley-technocore batch verify <evidence|message|receipt>
 valley-attestation verify
 ```
+
+`verify` is the single-object first-run entrypoint. It classifies one supplied object before routing to the existing evidence, message, receipt, provenance, or release-attestation verifier. Its machine output is a new wrapper with the unchanged native report nested under `report`; profile-specific commands retain their existing machine schemas. Provenance captures and bundles are classified separately because they use different existing paths.
 
 The original `create-evidence`, `verify-evidence`, and `verify-technocore-message` names remain supported. JSON remains the default machine output. Verification commands accept `--format human` for a line-oriented report intended for a person. Artefact-producing commands (`evidence create` and `receipt normalize`) always write canonical JSON and reject `--format human`; their output must remain suitable for later verification.
 
