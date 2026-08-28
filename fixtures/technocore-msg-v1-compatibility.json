@@ -1,0 +1,58 @@
+{
+  "schema": "gv.valley-technocore.compatibility-corpus/1",
+  "profile": "technocore.msg.v1",
+  "scope": "offline conformance vectors; not a server transcript or authority record",
+  "vectors": [
+    {
+      "id": "unicode-sweep",
+      "expect_exit": 0,
+      "signing_bytes_utf8_hex": "6c6f6262797c393030373139393235343734303939393939397c68656c6c6f20776f726c64",
+      "input": {
+        "schema": "technocore.msg.v1",
+        "room": "lobby",
+        "did": "did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw",
+        "nonce": "9007199254740999999",
+        "text": " \nhello‍world  ",
+        "signature_b64u": "ITscrGw2IVPs4XonfxK4uTdGRYQul4lgCcWJIzK9wWwl1rGNqCRlJrF9WxpQ1_MJJ2ifMPj5EnV_ld5u3bRxDw"
+      }
+    },
+    {
+      "id": "nfc-byte-exact",
+      "expect_exit": 0,
+      "signing_bytes_utf8_hex": "6c6f6262797c34327c636166c3a9",
+      "input": {
+        "schema": "technocore.msg.v1",
+        "room": "lobby",
+        "did": "did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw",
+        "nonce": "42",
+        "text": "café",
+        "signature_b64u": "JuylW-5XcVrkEYxUugmAV2K1r0cd3ObcA7m_TMsc40gE3lBb1qIya_us-KCTtczg-Wz9nIYjVVIUHIzJjZLUDA"
+      }
+    },
+    {
+      "id": "max-nonce",
+      "expect_exit": 0,
+      "signing_bytes_utf8_hex": "666c6f702d6e6574776f726b7c393939393939393939393939393939393939397c6e6f6e636520626f756e64617279",
+      "input": {
+        "schema": "technocore.msg.v1",
+        "room": "flop-network",
+        "did": "did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw",
+        "nonce": "9999999999999999999",
+        "text": "nonce boundary",
+        "signature_b64u": "y_pw7xb_6Q2LOQ_T7lpfoVFZ2tgQ-2T0YO5MR3QiNTgLgEt1z8MbQtucGCbVt1Ex_6UnnhqNB15ImRnQ6lAMAA"
+      }
+    },
+    {
+      "id": "malformed-overlong-nonce",
+      "expect_exit": 2,
+      "input": {
+        "schema": "technocore.msg.v1",
+        "room": "lobby",
+        "did": "did:key:z6MktwupdmLXVVqTzCw4i46r4uGyosGXRnR3XjN4Zq7oMMsw",
+        "nonce": "10000000000000000000",
+        "text": "invalid grammar",
+        "signature_b64u": "ITscrGw2IVPs4XonfxK4uTdGRYQul4lgCcWJIzK9wWwl1rGNqCRlJrF9WxpQ1_MJJ2ifMPj5EnV_ld5u3bRxDw"
+      }
+    }
+  ]
+}

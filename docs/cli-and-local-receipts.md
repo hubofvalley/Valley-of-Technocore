@@ -5,13 +5,21 @@ The verifier stays offline and stateless. It reads one JSON object from standard
 ## Command hierarchy
 
 ```text
+valley-technocore verify [--format json|human]
 valley-technocore evidence create
 valley-technocore evidence verify
 valley-technocore message verify
 valley-technocore receipt normalize
 valley-technocore receipt verify
+valley-technocore provenance create
+valley-technocore provenance verify
+valley-technocore batch verify <evidence|message|receipt>
 valley-attestation verify
 ```
+
+`verify` is the single-object first-run entrypoint. It classifies one supplied object before routing to the existing evidence, message, receipt, provenance, or release-attestation verifier. Its machine output is a new wrapper with the unchanged native report nested under `report`; profile-specific commands retain their existing machine schemas. Provenance captures and bundles are classified separately because they use different existing paths.
+
+The stable output fields, error taxonomy, and exit matrix for all commands are frozen in the [integrator contract](integrator-contract.md). The three captured first-run receipt representations have a reproducible clean-shell record in the [P0.5 proof report](first-run-proof-p05.md).
 
 The original `create-evidence`, `verify-evidence`, and `verify-technocore-message` names remain supported. JSON remains the default machine output. Verification commands accept `--format human` for a line-oriented report intended for a person. Artefact-producing commands (`evidence create` and `receipt normalize`) always write canonical JSON and reject `--format human`; their output must remain suitable for later verification.
 
@@ -22,7 +30,19 @@ JSON and human verification reports use the same validation and exit codes:
 - `3`: processable input with an invalid signature or payload hash
 - `1`: unexpected internal failure
 
-Errors go to standard error and begin with `error:`. Help exits `0` without reading standard input.
+For profile-specific commands, malformed input, unsupported options, and runtime failures go to standard error and begin with `error:`; processable verification results stay on standard output, including exit-`3` reports. Universal `verify` is the deliberate exception: JSON input errors are canonical wrapper objects on standard output, while human input errors go to standard error and begin with `classification:`. Help exits `0` without reading standard input.
+
+## Batch verification (NDJSON only)
+
+`batch verify` reads a bounded NDJSON stream from standard input. Select exactly one profile for the stream: `evidence`, `message`, or `receipt`. Receipt records use the same local normalisation contract as `receipt verify`; the other two profiles use their existing verifier contracts.
+
+```sh
+node ./bin/valley-technocore.js batch verify receipt < local-exports.ndjson
+```
+
+For each input line, standard output contains a canonical JSONL item record with a one-based `index`, profile, outcome, and either the ordinary verification report or a validation error. A final canonical JSONL summary gives `verified`, `invalid`, `malformed`, and `total` counts. Output order is input order.
+
+The exit code is `0` when every record verifies, `3` when one or more processable records are invalid, and `2` when one or more records are malformed; `2` takes precedence if both occur. This interface never accepts a directory, path, URL, or glob. It reads no files and does not perform HTTP, signing, key generation, wallet operations, or eligibility decisions.
 
 ## Normalise a local receipt export
 

@@ -16,7 +16,7 @@ const WEAK_KEYS = new Set([
   'c7176a703d4dd84fba3c0b760d10670f2a2053fa2c39cc3c0e0d174c5e44377a'
 ]);
 
-class AttestationInputError extends Error {}
+export class AttestationInputError extends Error {}
 const fail = (message) => { throw new AttestationInputError(message); };
 
 function parseStrictJson(text) {

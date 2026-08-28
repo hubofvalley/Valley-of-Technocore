@@ -10,7 +10,11 @@ An independent, unofficial tool by Grand Valley.
 
 - [What this verifies](#what-this-verifies)
 - [Quick demo](#quick-demo)
+- [First-run universal verification](docs/first-run-flow.md)
+- [P0.5 first-run proof](docs/first-run-proof-p05.md)
+- [Integrator contract](docs/integrator-contract.md)
 - [Verify your own local receipt export](#verify-your-own-local-receipt-export)
+- [Public compatibility corpus](#public-compatibility-corpus)
 - [Read the result correctly](#read-the-result-correctly)
 - [Commands and exit codes](#commands-and-exit-codes)
 - [Offline and safety boundary](#offline-and-safety-boundary)
@@ -22,10 +26,23 @@ Given a complete local input, the CLI can:
 
 - derive Technocore signing bytes as `room|nonce|swept-text`, then verify a detached Ed25519 signature over those derived bytes;
 - normalise one bounded local receipt export into the `technocore.msg.v1` profile;
+- bind a captured signed request to the matching local response record in a deterministic provenance bundle; and
+- batch-verify supplied newline-delimited evidence, messages, or local receipt exports without opening paths or making network requests;
 - package already-supplied signed bytes into deterministic evidence JSON; and
 - show that changing input in a way that changes the derived signing bytes invalidates a detached signature.
 
 It cannot establish source authenticity, DID ownership, authorship beyond control of the supplied key, server inclusion, recency, replay protection, contribution, recognition, eligibility, rewards, or authority.
+
+## First-run universal verification
+
+For a first local check, use the single stdin-only entrypoint:
+
+```bash
+node ./bin/valley-technocore.js verify --format human \
+  < fixtures/technocore-msg-v1-gauntlet.json
+```
+
+It deterministically classifies one supplied object as evidence, a canonical message, a local receipt export, provenance, or a release attestation, then routes it to the existing offline verifier. Unknown or ambiguous shapes exit `2`; processable cryptographic failures exit `3`. The human report names the failure category and next safe action. See the [first-run verification flow](docs/first-run-flow.md) for the exact categories and limits, the [P0.5 proof](docs/first-run-proof-p05.md) for three captured receipt representations, and the [integrator contract](docs/integrator-contract.md) for stable output and exit handling.
 
 ## Quick demo
 
@@ -88,6 +105,10 @@ The normaliser accepts one object in these bounded shapes:
 
 It also accepts canonical `technocore.msg.v1` input. It rejects unknown fields, ambiguous collections, and a missing detached signature. For the complete local-receipt contract, see [CLI and local receipt workflow](docs/cli-and-local-receipts.md).
 
+## Public compatibility corpus
+
+The checked-in [compatibility corpus](fixtures/technocore-msg-v1-compatibility.json) pins Unicode sweep, byte-exact NFC, maximum nonce, and malformed-input boundaries. It is useful for independent implementations and remains entirely offline. See [its contract and limits](docs/compatibility-corpus.md).
+
 ## Read the result correctly
 
 `decision: verified` means the supplied public key verifies the detached signature over the derived Technocore signing bytes: `room|nonce|swept-text`. It does not make the message trusted or authoritative. A raw-text change that Technocore sweep removes may leave those signing bytes unchanged.
@@ -96,14 +117,30 @@ The human report deliberately lists its non-claims, including `identity_not_esta
 
 This distinction matters because current documented Technocore room-read responses do not return detached signatures. A live read can be a separate source of message fields, but it cannot by itself recreate a complete offline verification input.
 
+## Build a local provenance bundle
+
+When another, separate posting tool has already captured both its signed request and the response record it received, package that pair without retrying the request or contacting Technocore:
+
+```bash
+node ./bin/valley-technocore.js provenance create < captured-request-and-response.json > provenance.json
+node ./bin/valley-technocore.js provenance verify --format human < provenance.json
+printf 'exit: %s\n' "$?"
+```
+
+The capture has exactly this shape: a canonical `technocore.msg.v1` request plus the response's matching `posted` record and HTTP `200` status. The CLI requires the DID, nonce, and swept text to match exactly. A valid bundle proves only that this supplied request signature verifies and that the supplied response record matches it. It does not prove that Technocore included, retained, or authorised the record.
+
 ## Commands and exit codes
 
 ```text
+valley-technocore verify [--format json|human]
 valley-technocore evidence create
 valley-technocore evidence verify [--format json|human]
 valley-technocore message verify [--format json|human]
 valley-technocore receipt normalize
 valley-technocore receipt verify [--format json|human]
+valley-technocore provenance create
+valley-technocore provenance verify [--format json|human]
+valley-technocore batch verify <evidence|message|receipt>
 valley-attestation verify [--format json|human]
 ```
 
@@ -117,6 +154,14 @@ Legacy aliases remain available: `create-evidence`, `verify-evidence`, and `veri
 | `3` | Input was processable but its detached signature or payload hash was invalid. |
 
 Default output, and explicit `--format json` output, is one canonical JSON object on stdout without a trailing newline. `--format human` is available only for verification and report commands. Evidence creation and receipt normalisation always emit canonical JSON artefacts; they reject `--format human`.
+
+`batch verify` is deliberately different: it consumes NDJSON from standard input and emits one canonical JSON object per line (JSONL), ending with a summary record. It accepts a fixed profile for the whole stream: `evidence`, `message`, or `receipt`. It does not accept a directory or any path, so every byte remains explicitly supplied through standard input.
+
+```sh
+node ./bin/valley-technocore.js batch verify message < supplied-messages.ndjson
+```
+
+Each item record has its one-based `index`, `profile`, `outcome` (`verified`, `invalid`, or `malformed`), and either the existing verifier `report` or a bounded validation `error`. The final record has `type: "summary"` and deterministic totals. Exit `0` means every record verified; exit `3` means one or more processable records were invalid; exit `2` means one or more records were malformed (and takes precedence over exit `3`). No batch result establishes identity, source authenticity, server inclusion, eligibility, reward, or authority.
 
 ## Offline and safety boundary
 
