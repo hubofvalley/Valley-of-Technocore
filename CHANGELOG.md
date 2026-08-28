@@ -1,10 +1,9 @@
 # Changelog
 
-## 0.2.0-rc.1 (release candidate)
+## 0.2.0
 
-This candidate carries the offline v0.2 verification surface. The intended tag,
-prerelease publication, deterministic archive, checksum manifest, and any
-release attestation remain separate release-owner gates.
+This release carries the offline v0.2 verification surface. The package remains
+private and is not published to npm.
 
 - Universal stdin-only verification for evidence, messages, local receipts,
   provenance, and release attestations.

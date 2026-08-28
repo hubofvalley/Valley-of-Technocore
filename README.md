@@ -184,7 +184,7 @@ For the full reproducibility walkthrough, see [testing and reproducibility](docs
 
 ## Release status
 
-Stable `v0.1.0` is published on GitHub: [release notes, deterministic source archive, and SHA-256 manifest](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0). The local candidate package is `0.2.0-rc.1`; this preparation does not create its tag or prerelease. The package remains `private: true` and is not published to npm. See [release readiness](docs/release-readiness.md) for the exact stable/RC contract and deterministic checker.
+Stable `v0.1.0` is published on GitHub: [release notes, deterministic source archive, and SHA-256 manifest](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0). Stable `v0.2.0` is prepared locally for the release-owner gate; its tag and GitHub release are not created by this checkout. The package remains `private: true` and is not published to npm. See [release readiness](docs/release-readiness.md) for the exact pre-publication and post-release contract.
 
 ## Licence
 
