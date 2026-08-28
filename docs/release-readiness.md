@@ -1,52 +1,39 @@
-# Release-readiness facts
+# Stable release contract
 
-This page records only facts that a reviewer can verify from repository files, Git references, or GitHub release metadata. It does not authorise a tag, publication, deployment, or key change.
+This page defines the machine-checked contract for a stable Valley of Technocore release. It records release metadata, not authority: it does not establish identity, repository control, source authenticity, contribution, eligibility, reward, or Technocore/FLOP recognition.
 
-## Current verified boundary
+## v0.1.0 status
 
-- This release-preparation branch updates `package.json` to version `0.1.0` and retains `private: true`.
-- The latest published GitHub release in the `v0.1.0*` series is the prerelease tag `v0.1.0-rc.6`.
-- The `v0.1.0-rc.6` tag resolves to commit `cd179a731a30ac6d16b1bb93b9ac547a2f143d79`.
-- That release exposes `release-attestation-v1.json` and an archive explicitly named `valley-of-technocore-v0.1.0-rc.5.tar`.
-- No stable `v0.1.0` tag, package publication, release, release artefact, or release attestation is claimed here.
+- Stable tag: `v0.1.0`, resolving to `59ee7c10bf55c289b6a9b74fd83ba1d52ab10a49`.
+- Published GitHub release: [Valley of Technocore v0.1.0](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0), published 27 August 2026 UTC.
+- Required release assets:
+  - `valley-of-technocore-v0.1.0.tar`
+  - `valley-of-technocore-v0.1.0.tar.sha256`
+- The archive is `git archive --format=tar --prefix=valley-of-technocore-v0.1.0/ v0.1.0`; its SHA-256 is `3986d8e9c601ac1cec704102072eec87284a35349e2a3e8d83bbb3c61ff47f15`.
+- The package is `private: true`; this is not an npm publication.
+- A stable `release-attestation-v1.json` is optional. None is claimed for v0.1.0.
 
-The checked-in attestation is deliberately narrower. Its signed statement declares the RC5 tag, commit, and artefact digest. The supplied signature verifies over those exact declaration bytes under the public key encoded in the supplied DID. It does not fetch or independently validate the tag, commit, archive bytes, digest, signing time, signer identity, repository control, or any external fact.
+The historical RC5 attestation fixture remains an RC5 fixture. It must not be presented as an attestation for this stable release.
 
-## Recheck before release decisions
+## Contract
 
-From a clean clone, record the exact checkout and local package metadata:
+For package version `X.Y.Z`, a stable release must satisfy all of the following:
+
+1. `package.json` has the exact stable version `X.Y.Z` and the exact tag is `vX.Y.Z`.
+2. The local and GitHub tag references resolve to the same commit.
+3. GitHub exposes a published, non-draft, non-prerelease release for that tag.
+4. It attaches `valley-of-technocore-vX.Y.Z.tar` and `valley-of-technocore-vX.Y.Z.tar.sha256`.
+5. The archive bytes exactly equal `git archive --format=tar --prefix=valley-of-technocore-vX.Y.Z/ vX.Y.Z`; the checksum file is exactly `<sha256><two spaces><archive name><newline>`.
+6. If `release-attestation-v1.json` is attached, its signature must be valid and its signed repository, tag, commit, and SHA-256 declaration must bind the same release archive. Attestation remains an additional cryptographic declaration, not proof of external facts or authority.
+
+## Check it
+
+From a checkout with Git, Node.js 22+, authenticated `gh`, and the release tag available locally:
 
 ```bash
-git rev-parse HEAD
-node -p "const p=require('./package.json'); JSON.stringify({version:p.version,private:p.private})"
-git tag --list 'v0.1.0*'
+npm run check-release-contract
 ```
 
-With authenticated GitHub CLI access, inspect the published prerelease and its assets:
+The checker is deterministic and contains no AI/model step. It reads package/tag data, fetches release metadata and assets through `gh`, reproduces the tagged archive, compares bytes and digest, and validates an attached optional attestation. It returns non-zero on any contract mismatch. GitHub Actions runs the same command on pull requests and pushes to `main`.
 
-```bash
-gh release view v0.1.0-rc.6 \
-  --repo hubofvalley/Valley-of-Technocore \
-  --json tagName,isPrerelease,isDraft,targetCommitish,assets,url
-
-gh api repos/hubofvalley/Valley-of-Technocore/git/ref/tags/v0.1.0-rc.6 \
-  --jq '{ref:.ref,object:.object}'
-```
-
-Release facts are mutable external state. Record the command outputs and timestamp rather than copying a branch's version or artefact claim into release copy without rechecking it.
-
-## Release-day manual gates
-
-After this PR is merged, a release owner must perform these separately:
-
-1. Confirm the intended merge commit and package metadata, then create the
-   `v0.1.0` tag from that exact commit.
-2. Build the intended release archive and independently record its SHA-256
-   digest.
-3. Create the GitHub release only after checking the tag, archive name, and
-   digest against the release record. The package remains private, so npm
-   publication is not part of this preparation.
-4. If a stable release attestation is desired, sign only independently
-   evidenced tag, commit, archive digest, and signing-time inputs. A new
-   attestation must not be inferred from the checked-in RC5 fixture; its
-   signing step is an external, tag-dependent manual gate.
+Release facts are mutable external state. Record the command output and time when making a release decision; do not infer future-release facts from this v0.1.0 record.

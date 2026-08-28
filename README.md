@@ -139,7 +139,7 @@ For the full reproducibility walkthrough, see [testing and reproducibility](docs
 
 ## Release status
 
-Stable `v0.1.0` is published on GitHub: [release notes and tag](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0). The package remains `private: true` and is not published to npm.
+Stable `v0.1.0` is published on GitHub: [release notes, deterministic source archive, and SHA-256 manifest](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0). The package remains `private: true` and is not published to npm. See [release readiness](docs/release-readiness.md) for the exact release contract and its deterministic checker.
 
 ## Licence
 

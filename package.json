@@ -11,6 +11,7 @@
   },
   "files": [
     "bin/",
+    "scripts/",
     "src/",
     "docs/",
     "README.md",
@@ -18,7 +19,8 @@
     "LICENSE"
   ],
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "check-release-contract": "node scripts/check-release-contract.mjs"
   },
   "engines": {
     "node": ">=22"
