@@ -24,8 +24,12 @@ pilot; this branch contains no skill runtime.
 
 ## Runtime-assurance checklist
 
-- [ ] Pin and verify tag, commit, executable digest, Node major version, and
-      allowlisted argv before activation.
+- [ ] Pin and verify tag, commit, full package-artefact digest
+      (`valley-of-technocore-v0.2.0.tar`, SHA-256
+      `5db00fad00a3973a09d867073208c899b550d43b73656cc6f521340c37a3649f`,
+      296,960-byte uncompressed tar stream), executable member path, Node.js
+      major `24`, and allowlisted argv before activation. The digest covers
+      the complete archive, not only `bin/valley-technocore.js`.
 - [ ] Start with a clean skill-owned process environment; pass no task env,
       secrets, credentials, working-directory override, or user-selected path.
 - [ ] Apply stdin, stdout, stderr, wall-time, memory, process, and network

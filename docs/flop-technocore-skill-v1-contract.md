@@ -7,8 +7,23 @@ Status: Gate A owner-review draft. Scope is explicit offline verification only.
 The skill verifies supplied public data through Valley of Technocore `v0.2.0`
 only: tag `v0.2.0`, target commit
 `908a5050d2c2222e92e08dd5352e454f876634d7`, and the release's pinned Node
-runtime requirement (`>=22`). The host must verify the executable/version pin
-before every activation and refuse to run on mismatch.
+runtime pin: Node.js major `24` (direct matrix runtime `v24.18.0`). The
+repository's `>=22` requirement and CI matrix `[22, 24]` are compatibility
+coverage; they are not alternate skill activation pins. The host must require
+Node major `24` and verify the executable/version pin before every activation.
+
+The skill-owned package artefact is `valley-of-technocore-v0.2.0.tar` at the
+release archive boundary. Its exact bytes are the uncompressed tar stream
+produced by `git archive --format=tar
+--prefix=valley-of-technocore-v0.2.0/ v0.2.0` at the pinned commit: 296,960
+bytes, SHA-256
+`5db00fad00a3973a09d867073208c899b550d43b73656cc6f521340c37a3649f`.
+The digest covers the complete archive, including `package.json`, `bin/`,
+and every imported `src/` module; it is not a digest of only the launcher.
+The skill-owned executable is the archive member
+`valley-of-technocore-v0.2.0/bin/valley-technocore.js`, materialised under the
+skill's own package directory. The host must verify the archive digest and
+Node major before activation, and refuse any path, byte, or version mismatch.
 
 ## Fixed interface
 

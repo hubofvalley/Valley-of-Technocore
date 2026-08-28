@@ -5,8 +5,18 @@ Status: Gate A design record. This is a verifier-integration contract, not an im
 ## Pin and invocation boundary
 
 The skill pins Valley of Technocore `v0.2.0`, tag `v0.2.0`, tag target
-`908a5050d2c2222e92e08dd5352e454f876634d7`. The four allowed direct invocations
-are fixed, stdin-only commands:
+`908a5050d2c2222e92e08dd5352e454f876634d7`. The approved Gate A runtime pin
+is Node.js major `24`; the direct matrix ran under `v24.18.0`. Node.js 22 and
+24 remain CI compatibility lanes, but major 24 is the only activation pin.
+The skill-owned package artefact is the complete uncompressed tar stream
+`valley-of-technocore-v0.2.0.tar`, generated with
+`git archive --format=tar --prefix=valley-of-technocore-v0.2.0/ v0.2.0` at that
+commit: 296,960 bytes and SHA-256
+`5db00fad00a3973a09d867073208c899b550d43b73656cc6f521340c37a3649f`.
+That digest covers the full archive, including the executable member
+`valley-of-technocore-v0.2.0/bin/valley-technocore.js`, `package.json`, and
+all imported `src/` modules. The four allowed direct invocations are fixed,
+stdin-only commands:
 
 ```text
 node ./bin/valley-technocore.js message verify
