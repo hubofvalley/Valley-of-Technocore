@@ -47,7 +47,8 @@ single-object input has empty stdout.
 | receipt verify | valid flat receipt | 0 | valid message report above | empty |
 | receipt verify | first supplied signature base64url character changed (`q` → `r`) | 3 | invalid message report above | empty |
 | receipt verify | `{` | 2 | empty | `error: object key must be a string\n` |
-| receipt verify | extra field or unsupported collection shape | 2 | empty | `error: unsupported receipt export shape\n` |
+| receipt verify | ambiguous/overlapping shape (flat receipt fields plus `receipt`) | 2 | empty | `error: unsupported receipt export shape\n` |
+| receipt verify | unknown extra field | 2 | empty | `error: unsupported receipt export shape\n` |
 | receipt verify | room length 48 and nonce length 19, with matching signature | 0 | valid message report | empty |
 | receipt verify | input >1 MiB | 2 | empty | `error: input exceeds 1 MiB\n` |
 | receipt verify | text changed without changing signature | 3 | invalid message report above | empty |
