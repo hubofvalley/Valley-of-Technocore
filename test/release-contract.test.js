@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const script = new URL('../scripts/check-release-contract.mjs', import.meta.url);
@@ -44,16 +46,23 @@ test('release contract rejects prerelease metadata', () => {
 test('release candidate contract accepts a prerelease package and exact archive', () => {
   const directory = mkdtempSync(join(tmpdir(), 'valley-release-candidate-'));
   const archiveName = 'valley-of-technocore-v0.2.0-rc.1.tar';
-  const archive = Buffer.from('deterministic release candidate archive bytes');
-  const digest = 'e4c7779af743a3b78faa48d2342c027ffd339946c80e9a376288963a3c15b1e1';
+  const packagePath = join(directory, 'package.json');
+  const archivePath = join(directory, archiveName);
   try {
-    writeFileSync(join(directory, 'package.json'), '{"version":"0.2.0-rc.1","private":true}\n');
-    writeFileSync(join(directory, archiveName), archive);
-    writeFileSync(join(directory, 'expected.tar'), archive);
+    writeFileSync(packagePath, '{"version":"0.2.0-rc.1","private":true}\n');
+    for (const args of [['init', '-q'], ['add', 'package.json'], ['-c', 'user.name=Release Test', '-c', 'user.email=release-test@example.invalid', 'commit', '-qm', 'candidate']]) {
+      const git = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
+      assert.equal(git.status, 0, git.stderr);
+    }
+    const archive = spawnSync('git', ['archive', '--format=tar', '--prefix=valley-of-technocore-v0.2.0-rc.1/', 'HEAD'], { cwd: directory });
+    assert.equal(archive.status, 0, archive.stderr?.toString());
+    writeFileSync(archivePath, archive.stdout);
+    const digest = createHash('sha256').update(archive.stdout).digest('hex');
     writeFileSync(join(directory, `${archiveName}.sha256`), `${digest}  ${archiveName}\n`);
-    writeFileSync(join(directory, 'release.json'), JSON.stringify({ tag_name: 'v0.2.0-rc.1', draft: false, prerelease: true, assets: [{ name: archiveName }, { name: `${archiveName}.sha256` }] }));
-    const result = spawnSync(process.execPath, [script.pathname, '--mode', 'candidate', '--package', join(directory, 'package.json'), '--release-json', join(directory, 'release.json'), '--archive', join(directory, archiveName), '--expected-archive', join(directory, 'expected.tar'), '--tag-commit', commit, '--remote-tag-commit', commit], { encoding: 'utf8' });
+    const result = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
     assert.equal(result.status, 0, result.stderr);
-    assert.deepEqual(JSON.parse(result.stdout), { version: '0.2.0-rc.1', tag: 'v0.2.0-rc.1', channel: 'release-candidate', commit, archive: archiveName, sha256: 'e4c7779af743a3b78faa48d2342c027ffd339946c80e9a376288963a3c15b1e1', attestation: 'not-present' });
+    const candidateCommit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: directory, encoding: 'utf8' });
+    assert.equal(candidateCommit.status, 0, candidateCommit.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { version: '0.2.0-rc.1', tag: 'v0.2.0-rc.1', channel: 'release-candidate', commit: candidateCommit.stdout.trim(), archive: archiveName, sha256: digest, attestation: 'not-present' });
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
