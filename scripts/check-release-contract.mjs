@@ -62,8 +62,7 @@ function checkAttestation(path, { tag, commit, digest }) {
   return 'valid';
 }
 
-function check({ packagePath, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag }) {
-  const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
+function check({ pkg, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag }) {
   const isStable = typeof pkg.version === 'string' && STABLE_VERSION.test(pkg.version);
   const isCandidate = typeof pkg.version === 'string' && CANDIDATE_VERSION.test(pkg.version);
   if (!isStable && !isCandidate) fail('package version must be a stable x.y.z or release-candidate x.y.z-rc.n version');
@@ -74,6 +73,7 @@ function check({ packagePath, metadata, archivePath, expectedArchivePath, localC
 
   const archiveName = `valley-of-technocore-v${pkg.version}.tar`;
   const manifestName = `${archiveName}.sha256`;
+  if (basename(archivePath) !== archiveName) fail(`release archive must be named ${archiveName}`);
   const assets = new Map((metadata.assets ?? []).map((asset) => [asset.name, asset]));
   if (!assets.has(archiveName) || !assets.has(manifestName)) fail(`release must attach ${archiveName} and ${manifestName}`);
 
@@ -93,10 +93,13 @@ function check({ packagePath, metadata, archivePath, expectedArchivePath, localC
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const packagePath = resolve(options.package ?? 'package.json');
-  const pkg = JSON.parse(readFileSync(packagePath, 'utf8'));
-  const tag = `v${pkg.version}`;
   const candidateMode = options.mode === 'candidate';
   if (options.mode !== undefined && options.mode !== 'stable' && !candidateMode) fail(`unsupported release-contract mode: ${options.mode}`);
+  const packageRoot = resolve(packagePath, '..');
+  const pkg = candidateMode
+    ? JSON.parse(command('git', ['show', 'HEAD:package.json'], { cwd: packageRoot }))
+    : JSON.parse(readFileSync(packagePath, 'utf8'));
+  const tag = `v${pkg.version}`;
   const fixtureMode = options['release-json'] !== undefined;
   const temp = fixtureMode ? null : mkdtempSync(join(tmpdir(), 'valley-release-contract-'));
   try {
@@ -115,9 +118,9 @@ function main() {
       const archiveRef = candidateMode ? 'HEAD' : tag;
       writeFileSync(expectedArchivePath, command('git', ['archive', '--format=tar', `--prefix=valley-of-technocore-v${pkg.version}/`, archiveRef], { cwd: resolve(packagePath, '..'), binary: true }));
     }
-    const localCommit = fixtureMode ? options['tag-commit'] : candidateMode ? command('git', ['rev-parse', 'HEAD'], { cwd: resolve(packagePath, '..') }).trim() : tagCommit(tag);
+    const localCommit = fixtureMode ? options['tag-commit'] : candidateMode ? command('git', ['rev-parse', 'HEAD'], { cwd: packageRoot }).trim() : tagCommit(tag);
     const remoteCommit = fixtureMode ? options['remote-tag-commit'] : candidateMode ? localCommit : remoteTagCommit(REPOSITORY, tag);
-    process.stdout.write(`${JSON.stringify(check({ packagePath, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag }))}\n`);
+    process.stdout.write(`${JSON.stringify(check({ pkg, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag }))}\n`);
   } finally {
     if (temp) rmSync(temp, { recursive: true, force: true });
   }

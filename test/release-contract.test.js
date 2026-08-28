@@ -66,3 +66,33 @@ test('release candidate contract accepts a prerelease package and exact archive'
     assert.deepEqual(JSON.parse(result.stdout), { version: '0.2.0-rc.1', tag: 'v0.2.0-rc.1', channel: 'release-candidate', commit: candidateCommit.stdout.trim(), archive: archiveName, sha256: digest, attestation: 'not-present' });
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
+
+test('release candidate contract binds committed metadata and archive filename', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'valley-release-candidate-binding-'));
+  const packagePath = join(directory, 'package.json');
+  const archiveName = 'valley-of-technocore-v0.2.0-rc.1.tar';
+  const archivePath = join(directory, archiveName);
+  try {
+    writeFileSync(packagePath, '{"version":"0.2.0-rc.1","private":true}\n');
+    for (const args of [['init', '-q'], ['add', 'package.json'], ['-c', 'user.name=Release Test', '-c', 'user.email=release-test@example.invalid', 'commit', '-qm', 'candidate']]) {
+      const git = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
+      assert.equal(git.status, 0, git.stderr);
+    }
+    const archive = spawnSync('git', ['archive', '--format=tar', '--prefix=valley-of-technocore-v0.2.0-rc.1/', 'HEAD'], { cwd: directory });
+    assert.equal(archive.status, 0, archive.stderr?.toString());
+    writeFileSync(archivePath, archive.stdout);
+    const digest = createHash('sha256').update(archive.stdout).digest('hex');
+    writeFileSync(join(directory, `${archiveName}.sha256`), `${digest}  ${archiveName}\n`);
+
+    writeFileSync(packagePath, '{"version":"9.9.9-rc.9","private":true}\n');
+    const dirtyMetadata = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(dirtyMetadata.status, 0, dirtyMetadata.stderr);
+    assert.match(dirtyMetadata.stdout, /"version":"0\.2\.0-rc\.1"/u);
+
+    const wrongName = join(directory, 'wrong-name.tar');
+    writeFileSync(wrongName, archive.stdout);
+    const wrongFilename = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', wrongName], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(wrongFilename.status, 1);
+    assert.match(wrongFilename.stderr, /must be named valley-of-technocore-v0\.2\.0-rc\.1\.tar/u);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
