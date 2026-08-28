@@ -18,7 +18,7 @@ function parseArgs(args) {
   const options = {};
   for (let index = 0; index < args.length; index += 1) {
     const arg = args[index];
-    if (!arg.startsWith('--') || index + 1 >= args.length) fail(`usage: check-release-contract [--mode stable|candidate --package path --archive path --release-json path --expected-archive path --tag-commit sha --remote-tag-commit sha]`);
+    if (!arg.startsWith('--') || index + 1 >= args.length) fail(`usage: check-release-contract [--mode stable|local|candidate --package path --archive path --release-json path --expected-archive path --tag-commit sha --remote-tag-commit sha]`);
     options[arg.slice(2)] = args[index + 1];
     index += 1;
   }
@@ -63,46 +63,65 @@ function checkAttestation(path, { tag, commit, digest }) {
   return 'valid';
 }
 
-function check({ pkg, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag }) {
+function packageReleaseInfo(pkg, tag) {
   const isStable = typeof pkg.version === 'string' && STABLE_VERSION.test(pkg.version);
   const isCandidate = typeof pkg.version === 'string' && CANDIDATE_VERSION.test(pkg.version);
   if (!isStable && !isCandidate) fail('package version must be a stable x.y.z or release-candidate x.y.z-rc.n version');
   if (pkg.private !== true) fail('package must remain private');
   if (tag !== `v${pkg.version}`) fail(`tag ${tag} does not match package version ${pkg.version}`);
-  if (!COMMIT.test(localCommit) || !COMMIT.test(remoteCommit) || localCommit !== remoteCommit) fail('local and remote tag targets differ');
-  if (metadata.tag_name !== tag || metadata.draft || metadata.prerelease !== isCandidate) fail(`release metadata is not the expected ${isCandidate ? 'prerelease candidate' : 'published stable release'} for the package tag`);
+  return { isCandidate, channel: isCandidate ? 'release-candidate' : 'stable' };
+}
 
+function checkArchive({ pkg, archivePath, expectedArchivePath }) {
   const archiveName = `valley-of-technocore-v${pkg.version}.tar`;
   const manifestName = `${archiveName}.sha256`;
   if (basename(archivePath) !== archiveName) fail(`release archive must be named ${archiveName}`);
-  const assets = new Map((metadata.assets ?? []).map((asset) => [asset.name, asset]));
-  if (!assets.has(archiveName) || !assets.has(manifestName)) fail(`release must attach ${archiveName} and ${manifestName}`);
-
   const archive = readFileSync(archivePath);
   const expectedArchive = readFileSync(expectedArchivePath);
-  if (!archive.equals(expectedArchive)) fail('release archive is not the deterministic archive for the tag');
+  if (!archive.equals(expectedArchive)) fail('release archive is not the deterministic archive for the checked revision');
   const digest = sha256(archive);
   const expectedManifest = `${digest}  ${archiveName}\n`;
   if (readFileSync(join(resolve(archivePath, '..'), manifestName), 'utf8') !== expectedManifest) fail('release checksum manifest does not exactly match the archive digest');
+  return { archiveName, digest };
+}
+
+function checkLocal({ pkg, archivePath, expectedArchivePath, localCommit, tag }) {
+  const { channel } = packageReleaseInfo(pkg, tag);
+  if (!COMMIT.test(localCommit)) fail('local HEAD does not resolve to a commit');
+  const { archiveName, digest } = checkArchive({ pkg, archivePath, expectedArchivePath });
+  return { version: pkg.version, tag, channel, commit: localCommit, archive: archiveName, sha256: digest, attestation: 'not-present' };
+}
+
+function checkRemote({ pkg, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag }) {
+  const { isCandidate, channel } = packageReleaseInfo(pkg, tag);
+  if (!COMMIT.test(localCommit) || !COMMIT.test(remoteCommit) || localCommit !== remoteCommit) fail('local and remote tag targets differ');
+  if (metadata.tag_name !== tag || metadata.draft || metadata.prerelease !== isCandidate) fail(`release metadata is not the expected ${isCandidate ? 'prerelease candidate' : 'published stable release'} for the package tag`);
+  const archiveName = `valley-of-technocore-v${pkg.version}.tar`;
+  const manifestName = `${archiveName}.sha256`;
+  const assets = new Map((metadata.assets ?? []).map((asset) => [asset.name, asset]));
+  if (!assets.has(archiveName) || !assets.has(manifestName)) fail(`release must attach ${archiveName} and ${manifestName}`);
+  const { digest } = checkArchive({ pkg, archivePath, expectedArchivePath });
 
   const attestation = assets.has('release-attestation-v1.json')
     ? checkAttestation(join(resolve(archivePath, '..'), 'release-attestation-v1.json'), { tag, commit: localCommit, digest })
     : 'not-present';
-  return { version: pkg.version, tag, channel: isCandidate ? 'release-candidate' : 'stable', commit: localCommit, archive: archiveName, sha256: digest, attestation };
+  return { version: pkg.version, tag, channel, commit: localCommit, archive: archiveName, sha256: digest, attestation };
 }
 
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const packagePath = resolve(options.package ?? 'package.json');
   const candidateMode = options.mode === 'candidate';
-  if (options.mode !== undefined && options.mode !== 'stable' && !candidateMode) fail(`unsupported release-contract mode: ${options.mode}`);
+  const localMode = options.mode === 'local';
+  const offlineMode = localMode || candidateMode;
+  if (options.mode !== undefined && options.mode !== 'stable' && !offlineMode) fail(`unsupported release-contract mode: ${options.mode}`);
   const packageRoot = resolve(packagePath, '..');
   const workingPkg = JSON.parse(readFileSync(packagePath, 'utf8'));
-  const committedPkg = candidateMode
+  const committedPkg = offlineMode
     ? JSON.parse(command('git', ['show', 'HEAD:package.json'], { cwd: packageRoot }))
     : null;
-  if (candidateMode && !isDeepStrictEqual(workingPkg, committedPkg)) {
-    fail('candidate package metadata must match committed HEAD:package.json');
+  if (offlineMode && !isDeepStrictEqual(workingPkg, committedPkg)) {
+    fail('local package metadata must match committed HEAD:package.json');
   }
   const pkg = committedPkg ?? workingPkg;
   const tag = `v${pkg.version}`;
@@ -110,23 +129,22 @@ function main() {
   const temp = fixtureMode ? null : mkdtempSync(join(tmpdir(), 'valley-release-contract-'));
   try {
     const archiveName = `valley-of-technocore-v${pkg.version}.tar`;
-    const metadata = fixtureMode
-      ? JSON.parse(readFileSync(resolve(options['release-json']), 'utf8'))
-      : candidateMode
-        ? { tag_name: tag, draft: false, prerelease: true, assets: [{ name: archiveName }, { name: `${archiveName}.sha256` }] }
-        : releaseMetadata(REPOSITORY, tag);
-    const archivePath = fixtureMode ? resolve(options.archive) : candidateMode ? resolve(options.archive) : downloadAsset(REPOSITORY, tag, archiveName, temp);
-    if (!fixtureMode && !candidateMode) downloadAsset(REPOSITORY, tag, `${archiveName}.sha256`, temp);
-    const attestationAsset = (metadata.assets ?? []).find((asset) => asset.name === 'release-attestation-v1.json');
-    if (!fixtureMode && !candidateMode && attestationAsset) downloadAsset(REPOSITORY, tag, attestationAsset.name, temp);
+    const metadata = fixtureMode ? JSON.parse(readFileSync(resolve(options['release-json']), 'utf8')) : offlineMode ? null : releaseMetadata(REPOSITORY, tag);
+    const archivePath = fixtureMode ? resolve(options.archive) : offlineMode ? resolve(options.archive) : downloadAsset(REPOSITORY, tag, archiveName, temp);
+    if (!fixtureMode && !offlineMode) downloadAsset(REPOSITORY, tag, `${archiveName}.sha256`, temp);
+    const attestationAsset = (metadata?.assets ?? []).find((asset) => asset.name === 'release-attestation-v1.json');
+    if (!fixtureMode && !offlineMode && attestationAsset) downloadAsset(REPOSITORY, tag, attestationAsset.name, temp);
     const expectedArchivePath = fixtureMode ? resolve(options['expected-archive']) : join(temp, 'expected.tar');
     if (!fixtureMode) {
-      const archiveRef = candidateMode ? 'HEAD' : tag;
+      const archiveRef = offlineMode ? 'HEAD' : tag;
       writeFileSync(expectedArchivePath, command('git', ['archive', '--format=tar', `--prefix=valley-of-technocore-v${pkg.version}/`, archiveRef], { cwd: resolve(packagePath, '..'), binary: true }));
     }
-    const localCommit = fixtureMode ? options['tag-commit'] : candidateMode ? command('git', ['rev-parse', 'HEAD'], { cwd: packageRoot }).trim() : tagCommit(tag);
-    const remoteCommit = fixtureMode ? options['remote-tag-commit'] : candidateMode ? localCommit : remoteTagCommit(REPOSITORY, tag);
-    process.stdout.write(`${JSON.stringify(check({ pkg, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag }))}\n`);
+    const localCommit = fixtureMode ? options['tag-commit'] : offlineMode ? command('git', ['rev-parse', 'HEAD'], { cwd: packageRoot }).trim() : tagCommit(tag);
+    const remoteCommit = fixtureMode ? options['remote-tag-commit'] : offlineMode ? localCommit : remoteTagCommit(REPOSITORY, tag);
+    const report = fixtureMode || !offlineMode
+      ? checkRemote({ pkg, metadata, archivePath, expectedArchivePath, localCommit, remoteCommit, tag })
+      : checkLocal({ pkg, archivePath, expectedArchivePath, localCommit, tag });
+    process.stdout.write(`${JSON.stringify(report)}\n`);
   } finally {
     if (temp) rmSync(temp, { recursive: true, force: true });
   }

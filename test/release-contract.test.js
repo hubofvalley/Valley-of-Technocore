@@ -87,12 +87,12 @@ test('release candidate contract binds committed metadata and archive filename',
     writeFileSync(packagePath, '{"version":"9.9.9-rc.9","private":true}\n');
     const dirtyMetadata = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
     assert.equal(dirtyMetadata.status, 1);
-    assert.match(dirtyMetadata.stderr, /package metadata must match committed HEAD:package\.json/u);
+    assert.match(dirtyMetadata.stderr, /local package metadata must match committed HEAD:package\.json/u);
 
     writeFileSync(packagePath, '{"version":"0.2.0-rc.1","private":false}\n');
     const dirtyPrivate = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'candidate', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
     assert.equal(dirtyPrivate.status, 1);
-    assert.match(dirtyPrivate.stderr, /package metadata must match committed HEAD:package\.json/u);
+    assert.match(dirtyPrivate.stderr, /local package metadata must match committed HEAD:package\.json/u);
 
     writeFileSync(packagePath, '{"version":"0.2.0-rc.1","private":true}\n');
     const wrongName = join(directory, 'wrong-name.tar');
@@ -103,14 +103,68 @@ test('release candidate contract binds committed metadata and archive filename',
   } finally { rmSync(directory, { recursive: true, force: true }); }
 });
 
+test('local stable contract validates HEAD without GitHub access', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'valley-stable-local-'));
+  const packagePath = join(directory, 'package.json');
+  const archiveName = 'valley-of-technocore-v0.2.0.tar';
+  const archivePath = join(directory, archiveName);
+  try {
+    writeFileSync(packagePath, '{"version":"0.2.0","private":true}\n');
+    for (const args of [['init', '-q'], ['add', 'package.json'], ['-c', 'user.name=Release Test', '-c', 'user.email=release-test@example.invalid', 'commit', '-qm', 'stable']]) {
+      const git = spawnSync('git', args, { cwd: directory, encoding: 'utf8' });
+      assert.equal(git.status, 0, git.stderr);
+    }
+    const archive = spawnSync('git', ['archive', '--format=tar', '--prefix=valley-of-technocore-v0.2.0/', 'HEAD'], { cwd: directory });
+    assert.equal(archive.status, 0, archive.stderr?.toString());
+    writeFileSync(archivePath, archive.stdout);
+    const digest = createHash('sha256').update(archive.stdout).digest('hex');
+    writeFileSync(join(directory, `${archiveName}.sha256`), `${digest}  ${archiveName}\n`);
+    const result = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(result.status, 0, result.stderr);
+    const stableCommit = spawnSync('git', ['rev-parse', 'HEAD'], { cwd: directory, encoding: 'utf8' });
+    assert.equal(stableCommit.status, 0, stableCommit.stderr);
+    assert.deepEqual(JSON.parse(result.stdout), { version: '0.2.0', tag: 'v0.2.0', channel: 'stable', commit: stableCommit.stdout.trim(), archive: archiveName, sha256: digest, attestation: 'not-present' });
+
+    writeFileSync(packagePath, '{"version":"9.9.9","private":true}\n');
+    const dirtyMetadata = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(dirtyMetadata.status, 1);
+    assert.match(dirtyMetadata.stderr, /local package metadata must match committed HEAD:package\.json/u);
+
+    writeFileSync(packagePath, '{"version":"0.2.0","private":true}\n');
+    const wrongName = join(directory, 'wrong-name.tar');
+    writeFileSync(wrongName, archive.stdout);
+    const wrongFilename = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', wrongName], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(wrongFilename.status, 1);
+    assert.match(wrongFilename.stderr, /must be named valley-of-technocore-v0\.2\.0\.tar/u);
+
+    writeFileSync(join(directory, `${archiveName}.sha256`), `${'0'.repeat(64)}  ${archiveName}\n`);
+    const badManifest = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(badManifest.status, 1);
+    assert.match(badManifest.stderr, /checksum manifest/u);
+
+    writeFileSync(join(directory, `${archiveName}.sha256`), `${digest}  ${archiveName}\n`);
+    writeFileSync(archivePath, Buffer.concat([archive.stdout, Buffer.from('tamper')]));
+    const badArchive = spawnSync(process.execPath, [fileURLToPath(script), '--mode', 'local', '--package', packagePath, '--archive', archivePath], { encoding: 'utf8', env: { ...process.env, PATH: '/usr/bin:/bin' } });
+    assert.equal(badArchive.status, 1);
+    assert.match(badArchive.stderr, /deterministic archive/u);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
 test('CI selects local candidate mode for prerelease metadata', () => {
   const workflow = readFileSync(new URL('../.github/workflows/test.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /release:\s+types: \[published\]/u);
+  assert.match(workflow, /ref: \$\{\{ github\.event\.release\.tag_name \|\| github\.ref \}\}/u);
+  assert.match(workflow, /name: Check local release contract\s+if: github\.event_name != 'release'/u);
+  assert.match(workflow, /name: Check published release contract\s+if: github\.event_name == 'release'/u);
+  assert.match(workflow, /contract_mode='local'/u);
   assert.match(workflow, /package_version=.*package\.json/u);
   assert.ok(workflow.includes('if [[ "$package_version" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+-rc\\.[0-9]+$ ]]; then'));
   assert.match(workflow, /git archive --format=tar --prefix="/u);
   assert.match(workflow, /HEAD > "\$archive_dir\/\$archive_name"/u);
   assert.match(workflow, /sha256sum "\$archive_name" > "\$archive_name\.sha256"/u);
-  assert.match(workflow, /--mode candidate/u);
   assert.match(workflow, /--archive "\$archive_dir\/\$archive_name"/u);
-  assert.match(workflow, /else\s+npm run check-release-contract\s+fi/u);
+  assert.match(workflow, /contract_mode='candidate'/u);
+  assert.match(workflow, /--mode "\$contract_mode"/u);
+  const localStep = workflow.split('      - name: Check published release contract')[0];
+  assert.doesNotMatch(localStep, /GH_TOKEN/u);
 });

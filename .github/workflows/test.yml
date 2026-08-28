@@ -8,6 +8,8 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -26,25 +28,33 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ github.event.release.tag_name || github.ref }}
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: 22
-      - name: Check release contract
+          package-manager-cache: false
+      - name: Check local release contract
+        if: github.event_name != 'release'
         shell: bash
         run: |
+          set -euo pipefail
           package_version="$(node -p "require('./package.json').version")"
+          archive_dir="${RUNNER_TEMP}/valley-release-contract"
+          archive_name="valley-of-technocore-v${package_version}.tar"
+          mkdir -p "$archive_dir"
+          git archive --format=tar --prefix="valley-of-technocore-v${package_version}/" HEAD > "$archive_dir/$archive_name"
+          (cd "$archive_dir" && sha256sum "$archive_name" > "$archive_name.sha256")
+          contract_mode='local'
           if [[ "$package_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
-            archive_dir="${RUNNER_TEMP}/valley-release-contract"
-            archive_name="valley-of-technocore-v${package_version}.tar"
-            mkdir -p "$archive_dir"
-            git archive --format=tar --prefix="valley-of-technocore-v${package_version}/" HEAD > "$archive_dir/$archive_name"
-            (cd "$archive_dir" && sha256sum "$archive_name" > "$archive_name.sha256")
-            npm run check-release-contract -- \
-              --mode candidate \
-              --archive "$archive_dir/$archive_name"
-          else
-            npm run check-release-contract
+            contract_mode='candidate'
           fi
+          npm run check-release-contract -- \
+            --mode "$contract_mode" \
+            --archive "$archive_dir/$archive_name"
+
+      - name: Check published release contract
+        if: github.event_name == 'release'
+        run: npm run check-release-contract
         env:
           GH_TOKEN: ${{ github.token }}
 
@@ -63,4 +73,5 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: ${{ matrix.node-version }}
+          package-manager-cache: false
       - run: npm test

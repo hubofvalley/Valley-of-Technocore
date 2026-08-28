@@ -5,34 +5,36 @@ releases and release candidates. It records release metadata, not authority: it
 does not establish identity, repository control, source authenticity,
 contribution, eligibility, reward, or Technocore/FLOP recognition.
 
-## v0.2.0-rc.1 candidate
+## v0.2.0 stable preparation
 
-- Candidate package version: `0.2.0-rc.1`; the package remains `private: true`.
-- Intended prerelease tag: `v0.2.0-rc.1`.
+- Stable package version: `0.2.0`; the package remains `private: true`.
+- Intended stable tag: `v0.2.0`.
 - This local preparation creates no tag, GitHub release, archive upload, or
-  release attestation. The candidate must remain clearly separate from the
-  published stable `v0.1.0` record below.
-- Required candidate artefacts are
-  `valley-of-technocore-v0.2.0-rc.1.tar` and its exact
-  `valley-of-technocore-v0.2.0-rc.1.tar.sha256` manifest.
-- The archive is reproduced from the candidate commit with:
-  `git archive --format=tar --prefix=valley-of-technocore-v0.2.0-rc.1/ HEAD`.
-- Candidate mode binds the package version and `private` flag to the committed
+  release attestation. The published stable `v0.1.0` record remains separate.
+- Required stable artefacts are `valley-of-technocore-v0.2.0.tar` and its exact
+  `valley-of-technocore-v0.2.0.tar.sha256` manifest.
+- The archive is reproduced from `HEAD` with:
+  `git archive --format=tar --prefix=valley-of-technocore-v0.2.0/ HEAD`.
+- Local mode binds the package version and `private` flag to the committed
   `HEAD:package.json`, even if the working-tree package file was edited. The
   supplied archive path must use the exact versioned filename above.
-- Validate the local candidate without GitHub access:
+- Validate the local stable preparation without GitHub access:
 
   ```bash
   npm run check-release-contract -- \
-    --mode candidate \
-    --archive /path/to/valley-of-technocore-v0.2.0-rc.1.tar
+    --mode local \
+    --archive /path/to/valley-of-technocore-v0.2.0.tar
   ```
 
   The checker reproduces `HEAD`, compares archive bytes, checks the exact
-  checksum manifest, and reports the candidate commit and digest. Candidate
-  mode also requires the working `package.json` metadata to match
-  `HEAD:package.json` and requires the archive basename to be exactly
-  `valley-of-technocore-v0.2.0-rc.1.tar`.
+  checksum manifest, and reports the stable commit and digest. Local mode also
+  requires the working `package.json` metadata to match `HEAD:package.json` and
+  requires the archive basename to be exactly
+  `valley-of-technocore-v0.2.0.tar`.
+
+The previously published `v0.2.0-rc.1` prerelease was the validation phase for
+this same v0.2 surface. Stable promotion uses the final stable metadata and
+does not reuse the RC tag.
 
 ## v0.1.0 status
 
@@ -72,6 +74,12 @@ For a release candidate `X.Y.Z-rc.N`, distinguish these two stages:
   same byte and manifest rules. This stage may call `gh`; it is not the local
   candidate mode.
 
+For a stable `X.Y.Z` preparation, local mode validates the committed package
+metadata, exact archive name, deterministic `HEAD` archive, and checksum before
+any tag or release exists. After the GitHub release is published, the normal
+stable contract validates the local and remote tag targets, published release
+metadata, assets, archive bytes, checksum, and any optional attestation.
+
 ## Check it
 
 From a checkout with Git, Node.js 22+, authenticated `gh`, and the release tag available locally:
@@ -80,31 +88,41 @@ From a checkout with Git, Node.js 22+, authenticated `gh`, and the release tag a
 npm run check-release-contract
 ```
 
-For this local release candidate, use the offline candidate mode shown above;
-it does not call `gh` and does not require a tag.
+For this local stable preparation, use the offline local mode shown above; it
+does not call `gh` and does not require a tag.
 
 The checker is deterministic and contains no AI/model step. The release-contract
-job in `.github/workflows/test.yml` selects the contract from package metadata:
+job in `.github/workflows/test.yml` selects the contract from the event and
+package metadata:
 
-- For an `X.Y.Z-rc.N` package, CI creates the archive and exact checksum in the
-  runner temporary directory, then runs the local check:
+- For a package on a branch, pull request, or manual workflow run, CI creates
+  the archive and exact checksum in the runner temporary directory, then runs
+  local mode selected from the package version:
 
   ```bash
+  contract_mode='local'
+  if [[ "$package_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$ ]]; then
+    contract_mode='candidate'
+  fi
   npm run check-release-contract -- \
-    --mode candidate \
+    --mode "$contract_mode" \
     --archive "$archive_dir/$archive_name"
   ```
 
-  This validates the checked-out `HEAD` and does not call `gh`, require a tag,
-  or claim that an untagged RC is a GitHub prerelease.
-- For a stable `X.Y.Z` package, CI runs `npm run check-release-contract` with
-  `GH_TOKEN`. That is the post-tag remote contract: it fetches GitHub release
-  metadata/assets, reproduces the tagged archive, compares bytes and digest,
-  and validates an attached optional attestation.
+  The actual mode is `candidate` for `X.Y.Z-rc.N` and `local` for stable
+  `X.Y.Z`. This validates checked-out `HEAD`, does not call `gh`, and does not
+  claim that a tag or GitHub release exists.
+- For a published GitHub `release` event, CI runs
+  `npm run check-release-contract` with `GH_TOKEN`. That is the post-release
+  remote contract: it fetches GitHub release metadata/assets, reproduces the
+  tagged archive, compares bytes and digest, and validates an attached optional
+  attestation.
 
-Both modes return non-zero on any contract mismatch. The local untagged RC
-check and post-tag remote prerelease validation are deliberately separate.
+Both paths return non-zero on any contract mismatch. Pre-publication local
+validation and post-release remote validation are deliberately separate, so a
+stable branch or pull request does not fail merely because its release has not
+been published yet.
 
 Release facts are mutable external state. Record the command output and time
 when making a release decision; do not infer future-release facts from the
-v0.1.0 stable record or this v0.2.0-rc.1 local candidate.
+v0.1.0 stable record or the previously published v0.2.0-rc.1 prerelease.
