@@ -10,7 +10,6 @@
     "sha256": "5db00fad00a3973a09d867073208c899b550d43b73656cc6f521340c37a3649f"
   },
   "runtimeFiles": {
-    "package.json": "b2230d3637e7304608deeec475b5b43f9ac18486a9ded131712c51dd97f31607",
     "bin/valley-technocore.js": "616ac4d3e5a828b6a3f97517241581af154d204bf993f75a0701eeef7df47953",
     "src/attestation.js": "78d37bd43e6d525269c395faee778b73b299790e39b78dd1715afa500f495139",
     "src/batch-cli.js": "deb5e01cde8db787e3fc8efd2f325a6a837f1351b5f91f202e40b926544758d0",

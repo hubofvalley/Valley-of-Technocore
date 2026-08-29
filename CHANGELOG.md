@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1
+
+This patch release adds the FLOP Technocore Skill v1 verifier adapter. The
+package remains private and is not published to npm.
+
+- Four explicit stdin-only verifier profiles for messages, receipts, evidence,
+  and provenance.
+- The adapter is pinned to the reviewed `v0.2.0` release and preserves its
+  network, filesystem-write, signing, and action-escalation boundaries.
+- Existing `v0.2.0` verifier CLI commands and output/exit behaviour are
+  unchanged; `v0.2.0` users are unaffected.
+
 ## 0.2.0
 
 This release carries the offline v0.2 verification surface. The package remains

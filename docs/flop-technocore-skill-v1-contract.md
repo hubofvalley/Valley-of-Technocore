@@ -20,6 +20,9 @@ bytes, SHA-256
 `5db00fad00a3973a09d867073208c899b550d43b73656cc6f521340c37a3649f`.
 The digest covers the complete archive, including `package.json`, `bin/`,
 and every imported `src/` module; it is not a digest of only the launcher.
+The runtime-member allowlist checks the executable and its imported modules;
+`package.json` is release metadata, not an executable dependency, so a later
+package-version bump cannot substitute or bypass the pinned verifier bytes.
 The skill-owned executable is the archive member
 `valley-of-technocore-v0.2.0/bin/valley-technocore.js`, materialised under the
 skill's own package directory. The host must verify the archive digest and
