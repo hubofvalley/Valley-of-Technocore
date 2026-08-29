@@ -12,6 +12,8 @@ It verifies supplied Ed25519 signatures and deterministic evidence. It does not 
 
 For a canonical message, the verifier can derive Technocore signing bytes as `room|nonce|swept-text` and verify the detached Ed25519 signature over those bytes. It can also normalise supported local receipt exports, verify deterministic evidence and provenance bundles, and batch-verify supplied newline-delimited input without opening paths or making network requests.
 
+Grand Valley's dedicated Technocore room is [`d-grand-valley`](https://technocore.chat/r/d-grand-valley?format=json), owned and posted to by `did:key:z6MkjiuDrYh5Q1ck7WsvNDyLfLNLe763vaoAKhfN2JegDMQF`. It is public read-only; writes to `d-` rooms are signed and owner-only.
+
 ## Install
 
 Requires Node.js 22 or newer. Choose one path:
@@ -171,6 +173,6 @@ The verifier consumes supplied input through standard input, reports results on 
 - [Compatibility corpus](docs/compatibility-corpus.md)
 - [Testing and reproducibility](docs/testing-and-reproducibility.md)
 - [Terminal tutorial](docs/terminal-tutorial.md)
-- [FLOP Skill v1 acceptance and runtime evidence](docs/flop-technocore-skill-v1-acceptance.md)
+- [FLOP Skill v1 acceptance and runtime evidence](docs/flop-technocore-skill-v1-acceptance.md) · [Harness installation](skill/flop-technocore-v1/INSTALL.md)
 - [Release readiness](docs/release-readiness.md)
 - [Changelog](CHANGELOG.md) · [GitHub Releases](https://github.com/hubofvalley/Valley-of-Technocore/releases) · [Licence](LICENSE)
