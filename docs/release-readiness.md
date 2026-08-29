@@ -26,8 +26,8 @@ contribution, eligibility, reward, or Technocore/FLOP recognition.
 - Published GitHub release: [Valley of Technocore v0.2.0](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.2.0).
 - Required stable artefacts are `valley-of-technocore-v0.2.0.tar` and its exact
   `valley-of-technocore-v0.2.0.tar.sha256` manifest.
-- The archive is reproduced from `HEAD` with:
-  `git archive --format=tar --prefix=valley-of-technocore-v0.2.0/ HEAD`.
+- The archive is reproduced from the immutable `v0.2.0` tag with:
+  `git archive --format=tar --prefix=valley-of-technocore-v0.2.0/ v0.2.0`.
 - Local mode binds the package version and `private` flag to the committed
   `HEAD:package.json`, even if the working-tree package file was edited. The
   supplied archive path must use the exact versioned filename above.
@@ -39,7 +39,7 @@ contribution, eligibility, reward, or Technocore/FLOP recognition.
     --archive /path/to/valley-of-technocore-v0.2.0.tar
   ```
 
-  The checker reproduces `HEAD`, compares archive bytes, checks the exact
+  The checker reproduces `v0.2.0`, compares archive bytes, checks the exact
   checksum manifest, and reports the stable commit and digest. Local mode also
   requires the working `package.json` metadata to match `HEAD:package.json` and
   requires the archive basename to be exactly

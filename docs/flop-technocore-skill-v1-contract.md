@@ -23,10 +23,12 @@ and every imported `src/` module; it is not a digest of only the launcher.
 The runtime-member allowlist checks the executable and its imported modules;
 `package.json` is release metadata, not an executable dependency, so a later
 package-version bump cannot substitute or bypass the pinned verifier bytes.
-The skill-owned executable is the archive member
-`valley-of-technocore-v0.2.0/bin/valley-technocore.js`, materialised under the
-skill's own package directory. The host must verify the archive digest and
-Node major before activation, and refuse any path, byte, or version mismatch.
+The archive member
+`valley-of-technocore-v0.2.0/bin/valley-technocore.js` is the verification
+reference. The adapter runs `REPO_ROOT/bin/valley-technocore.js` only after its
+bytes and every allowlisted imported runtime member match that archive. The
+host must verify the archive digest and Node major before activation, and refuse
+any path, byte, or version mismatch.
 
 ## Fixed interface
 
