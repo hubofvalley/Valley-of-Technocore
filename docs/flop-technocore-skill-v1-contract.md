@@ -56,9 +56,11 @@ not execute, browse, fetch, quote as authority, or route actions from them.
 Enforce before/around invocation: input ≤1 MiB; output stdout ≤64 KiB; stderr
 ≤16 KiB; one verifier process; wall time ≤5 seconds; and Node V8 old-space
 budget 128 MiB. Gate C must prove the cap in the adapter-launched child (V8
-heap limit ≤384 MiB on the pinned Node 24 runtime); source inspection is insufficient. Linux `strace` is a
-mandatory Gate C prerequisite for no-write/no-network evidence: its absence or
-failure closes the gate. The owner-approved local pilot ran the adapter and
+heap limit ≤384 MiB on the pinned Node 24 runtime) with an active A/B retained-
+heap probe; source inspection is insufficient. This proves V8 old-space
+enforcement only; the adapter does not set or claim an OS rlimit or total-RSS
+bound. Linux `strace` is a mandatory Gate C prerequisite for no-write/no-network
+evidence: its absence or failure closes the gate. The owner-approved local pilot ran the adapter and
 its one verifier child in a disposable cgroup-v2 scope with `MemoryMax=384 MiB`,
 `MemorySwapMax=0`, and `TasksMax=32`. It must prove controller values,
 descendant scope membership, zero OOM events, nonzero peak usage, exact direct

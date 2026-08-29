@@ -30,11 +30,16 @@ symlink/path mismatch, byte mismatch, runtime mismatch, or failed check returns
 `unavailable` and starts no verifier. The child is bounded to 1 MiB stdin,
 64 KiB stdout, 16 KiB stderr, 5 seconds wall time, and a 128 MiB Node V8
 old-space budget. Gate C proves that cap in the actual adapter-launched child:
-on the pinned Node 24 runtime its reported V8 heap limit must be ≤384 MiB, so
-a missing or ineffective `NODE_OPTIONS` setting fails the test. Linux `strace`
-is mandatory for the no-write/no-network trace; a missing tracer fails Gate C,
-not skips it. Total RSS requires a host cgroup or equivalent owner-pilot
-control; the adapter does not claim to hard-cap it.
+on the pinned Node 24 runtime its reported V8 heap limit must be ≤384 MiB. The
+same isolated temporary adapter is tested A/B: removing only its child
+`NODE_OPTIONS` cap must let a retained-heap control reach the valid report,
+while the unmodified capped adapter must hit the allocation limit first and
+fail closed. This proves V8 old-space enforcement only; the adapter does not
+set or claim an OS rlimit or total-RSS bound. Linux `strace` is mandatory for
+the no-write/no-network trace; the test always executes the tracer and fails
+when it is missing or unusable, while the Node 22 compatibility lane records
+only the adapter preflight because the pinned runtime deliberately rejects that
+Node major. Total RSS requires a host cgroup or equivalent owner-pilot control.
 
 The adapter maps only these outcomes: exact canonical exit-0 reports to
 `verified`; exact canonical exit-3 reports to `cryptographic_invalid`; bounded

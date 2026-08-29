@@ -35,11 +35,13 @@ owner-approved local pilot passed under a disposable cgroup-v2 scope.
       the complete archive, not only `bin/valley-technocore.js`.
 - [x] Start with a clean skill-owned process environment; pass no task env,
       secrets, credentials, working-directory override, or user-selected path.
-- [x] Apply stdin, stdout, stderr, wall-time, process, and network limits
-      before sending data; set the child Node V8 old-space budget to 128 MiB.
-      Gate C launches an adapter-owned verifier child and proves its actual V8
-      heap limit is ≤384 MiB on the pinned Node 24 runtime; a missing or
-      ineffective cap makes the test fail.
+- [x] Apply bounded stdin, stdout, stderr, and wall-time limits before sending
+      data; launch only the fixed verifier child and set its Node V8 old-space
+      budget to 128 MiB. Gate C proves the child heap limit is ≤384 MiB on the
+      pinned Node 24 runtime and runs an A/B retained-heap probe: removing only
+      the cap allows a control report, while the unmodified cap prevents that
+      report and fails closed. The adapter does not claim an OS rlimit or total
+      RSS cap.
 - [x] Host-level total RSS cgroup pilot passed with `MemoryMax=384 MiB`,
       `MemorySwapMax=0`, `TasksMax=32`, 30,752,768-byte peak, zero OOM/OOM kill,
       exact direct-CLI output, descendant membership, and collected scope. It
@@ -52,7 +54,8 @@ owner-approved local pilot passed under a disposable cgroup-v2 scope.
       dependency/runtime/config change, and deployment image change.
 - [x] Confirm no file, network, browser, package, credential, or child-process
       side effects in a clean-room smoke run. Linux `strace` is required for
-      this assurance; environments without it are not pilot-eligible.
+      this assurance and its mandatory test fails when the tracer is absent or
+      unusable; environments without it are not pilot-eligible.
 - [x] Retain only bounded result metadata needed by the caller; do not persist
       supplied payloads, signatures, DIDs, credentials, or diagnostics by
       default.
