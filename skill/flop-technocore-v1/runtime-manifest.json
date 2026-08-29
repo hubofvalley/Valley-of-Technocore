@@ -1,0 +1,25 @@
+{
+  "nodeMajor": 24,
+  "nodeMatrixVersion": "24.18.0",
+  "releaseTag": "v0.2.0",
+  "releaseCommit": "908a5050d2c2222e92e08dd5352e454f876634d7",
+  "archive": {
+    "path": "vendor/valley-of-technocore-v0.2.0.tar",
+    "prefix": "valley-of-technocore-v0.2.0/",
+    "bytes": 296960,
+    "sha256": "5db00fad00a3973a09d867073208c899b550d43b73656cc6f521340c37a3649f"
+  },
+  "runtimeFiles": {
+    "package.json": "b2230d3637e7304608deeec475b5b43f9ac18486a9ded131712c51dd97f31607",
+    "bin/valley-technocore.js": "616ac4d3e5a828b6a3f97517241581af154d204bf993f75a0701eeef7df47953",
+    "src/attestation.js": "78d37bd43e6d525269c395faee778b73b299790e39b78dd1715afa500f495139",
+    "src/batch-cli.js": "deb5e01cde8db787e3fc8efd2f325a6a837f1351b5f91f202e40b926544758d0",
+    "src/cli.js": "eac9ebfc32144abdd90478bd0cc66ccd97a1f1d128110e3518e4a2a382f91af3",
+    "src/format.js": "84d9d828a9812b56c7b15ff169622095d291f9b691b495c0dd01599a0fe99294",
+    "src/provenance.js": "815ece643e9f290cbaa57d398efd586721229e767a86dfb7456d18f29888bdbe",
+    "src/receipt-cli.js": "45c84626df3bd0a6e2bc1693adb84c8ead3d78babf6aaf9c910013d1333d9808",
+    "src/receipt.js": "38f51aef970609c4c2f4d6994b4c30e3becca06fdc9598e8f156bf19dafb479a",
+    "src/technocore-message.js": "f604fa2c33275f7d3a3a2bb7d7de079ec0d2281d5cf80e6222e7df7ae789fc21",
+    "src/verify-cli.js": "10f75752c0c2eeeea2c8ed2dfda6a29a7ae741002511fa00724d57bed92bd6f3"
+  }
+}
