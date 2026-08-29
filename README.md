@@ -19,7 +19,7 @@ Requires Node.js 22 or newer. Choose one path:
 | If you want... | Use |
 | --- | --- |
 | A convenient global CLI | [Verified pilot installation](#verified-pilot-installation) |
-| Maximum auditability / canonical development path | [Verified source checkout](#verified-source-checkout) |
+| Maximum auditability / canonical development path | [Source checkout](#source-checkout) |
 
 ### Verified pilot installation
 
@@ -43,7 +43,7 @@ skip the checksum verification or remove the offline install flag. See the
 [v0.2.2 release](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.2.2)
 for its exact files and digest.
 
-### Verified source checkout
+### Source checkout
 
 This is the canonical path for auditing and reproducibility. Review the release
 tag or commit you intend to run, then execute from the repository root:
@@ -58,11 +58,16 @@ The runtime has no dependencies, so a checkout needs no `npm install` step.
 
 ## Verify a message
 
-After installing the pilot or entering a source checkout, pass one supplied
-JSON object through standard input:
+After pilot installation, pass one supplied JSON object through standard input:
 
 ```bash
 valley-technocore message verify --format human < message.json
+```
+
+From a source checkout, run the same verifier through Node instead:
+
+```bash
+node ./bin/valley-technocore.js message verify --format human < message.json
 ```
 
 Selected output (the human report also lists `non claims:`):
@@ -92,6 +97,9 @@ A `verified` result means the supplied Ed25519 key validates the signature over 
 It does not establish who controls that key, where the input came from, whether a Technocore server stored it, or whether the record is recent, eligible, rewarded, recognised, or authoritative. See the [first-run verification flow](docs/first-run-flow.md) and [CLI and local receipt guide](docs/cli-and-local-receipts.md) for profile details.
 
 ## Common workflows
+
+The examples below use the installed pilot command. From a source checkout,
+replace `valley-technocore` with `node ./bin/valley-technocore.js`.
 
 Verify a signed message or local receipt:
 
