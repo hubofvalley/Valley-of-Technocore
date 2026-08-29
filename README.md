@@ -1,82 +1,68 @@
 # Valley of Technocore
 
-Valley of Technocore is an unofficial, stateless, offline CLI for checking supplied Ed25519-signed Technocore message bytes and packaging supplied signed bytes as deterministic evidence.
+[![CI](https://github.com/hubofvalley/Valley-of-Technocore/actions/workflows/test.yml/badge.svg)](https://github.com/hubofvalley/Valley-of-Technocore/actions/workflows/test.yml) [![Node >=22](https://img.shields.io/badge/node-%3E%3D22-339933?logo=node.js&logoColor=white)](https://nodejs.org/) [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-It is a verifier, not a Technocore client. It does not connect to Technocore, create keys, sign messages, decide eligibility, or prove who controls a DID.
+Verify supplied Technocore signed messages locally, without giving the verifier network, wallet, or signing access.
+
+Unofficial • independent • offline • stateless • no runtime dependencies
 
 An independent, unofficial tool by Grand Valley.
 
-## Contents
+It verifies supplied Ed25519 signatures and deterministic evidence. It does not establish who controls a DID, where input came from, server inclusion, eligibility, rewards, or authority.
 
-- [What this verifies](#what-this-verifies)
-- [Pilot installation (not yet available)](#pilot-installation-not-yet-available)
-- [Run directly from a verified source checkout](#run-directly-from-a-verified-source-checkout)
-- [Quick demo](#quick-demo)
-- [First-run universal verification](docs/first-run-flow.md)
-- [P0.5 first-run proof](docs/first-run-proof-p05.md)
-- [Integrator contract](docs/integrator-contract.md)
-- [Verify your own local receipt export](#verify-your-own-local-receipt-export)
-- [Public compatibility corpus](#public-compatibility-corpus)
-- [Read the result correctly](#read-the-result-correctly)
-- [Commands and exit codes](#commands-and-exit-codes)
-- [Offline and safety boundary](#offline-and-safety-boundary)
-- [Troubleshooting](#troubleshooting)
+For a canonical message, the verifier can derive Technocore signing bytes as `room|nonce|swept-text` and verify the detached Ed25519 signature over those bytes. It can also normalise supported local receipt exports, verify deterministic evidence and provenance bundles, and batch-verify supplied newline-delimited input without opening paths or making network requests.
 
-## What this verifies
+## Install
 
-Given a complete local input, the CLI can:
+Requires Node.js 22 or newer. Choose one path:
 
-- derive Technocore signing bytes as `room|nonce|swept-text`, then verify a detached Ed25519 signature over those derived bytes;
-- normalise one bounded local receipt export into the `technocore.msg.v1` profile;
-- bind a captured signed request to the matching local response record in a deterministic provenance bundle; and
-- batch-verify supplied newline-delimited evidence, messages, or local receipt exports without opening paths or making network requests;
-- package already-supplied signed bytes into deterministic evidence JSON; and
-- show that changing input in a way that changes the derived signing bytes invalidates a detached signature.
+| If you want... | Use |
+| --- | --- |
+| A convenient global CLI | [Verified pilot installation](#verified-pilot-installation) |
+| Maximum auditability / canonical development path | [Verified source checkout](#verified-source-checkout) |
 
-It cannot establish source authenticity, DID ownership, authorship beyond control of the supplied key, server inclusion, recency, replay protection, contribution, recognition, eligibility, rewards, or authority.
+### Verified pilot installation
 
-## Pilot installation (not yet available)
-
-A commit-pinned pilot archive is not available yet. When one is cut and its
-SHA-256 manifest is published, verify the archive before installing it:
+This is the shortest path. It installs the current commit-pinned pilot from a
+GitHub Release, never from the npm registry. Download the archive and its
+checksum manifest, verify them, then install the already-downloaded archive
+offline:
 
 ```bash
-sha256sum -c valley-of-technocore-pilot-<SHA>.tar.sha256
-npm install -g --ignore-scripts --offline --no-audit --no-fund ./valley-of-technocore-pilot-<SHA>.tar
+curl -fLO https://github.com/hubofvalley/Valley-of-Technocore/releases/download/v0.2.2/valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar
+curl -fLO https://github.com/hubofvalley/Valley-of-Technocore/releases/download/v0.2.2/valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar.sha256
+sha256sum -c valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar.sha256
+npm install -g --ignore-scripts --offline --no-audit --no-fund ./valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar
 valley-technocore --help
 ```
 
-This local installation path performs no network access and is not an npm
-registry release. Do not run it until the commit-pinned pilot archive and its
-published digest are available.
+On macOS, use `shasum -a 256 -c <manifest>` in place of `sha256sum -c <manifest>`.
 
-## Run directly from a verified source checkout
+The archive is a pilot evaluation release. It is not an npm publication; do not
+skip the checksum verification or remove the offline install flag. See the
+[v0.2.2 release](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.2.2)
+for its exact files and digest.
 
-This is the canonical source-checkout and audit mode. It does not require an
-installed global binary; run the commands from the cloned repository root.
+### Verified source checkout
 
-## First-run universal verification
-
-For a first local check, use the single stdin-only entrypoint:
-
-```bash
-node ./bin/valley-technocore.js verify --format human \
-  < fixtures/technocore-msg-v1-gauntlet.json
-```
-
-It deterministically classifies one supplied object as evidence, a canonical message, a local receipt export, provenance, or a release attestation, then routes it to the existing offline verifier. Unknown or ambiguous shapes exit `2`; processable cryptographic failures exit `3`. The human report names the failure category and next safe action. See the [first-run verification flow](docs/first-run-flow.md) for the exact categories and limits, the [P0.5 proof](docs/first-run-proof-p05.md) for three captured receipt representations, and the [integrator contract](docs/integrator-contract.md) for stable output and exit handling.
-
-## Quick demo
-
-Requirements: Git and Node.js 22 or newer. The runtime has no dependencies, so the CLI needs no `npm install` step.
+This is the canonical path for auditing and reproducibility. Review the release
+tag or commit you intend to run, then execute from the repository root:
 
 ```bash
-node --version
 git clone https://github.com/hubofvalley/Valley-of-Technocore.git
 cd Valley-of-Technocore
-node ./bin/valley-technocore.js message verify --format human \
-  < fixtures/technocore-msg-v1-gauntlet.json
-printf 'exit: %s\n' "$?"
+node ./bin/valley-technocore.js message verify --format human < message.json
+```
+
+The runtime has no dependencies, so a checkout needs no `npm install` step.
+
+## Verify a message
+
+After installing the pilot or entering a source checkout, pass one supplied
+JSON object through standard input:
+
+```bash
+valley-technocore message verify --format human < message.json
 ```
 
 Selected output (the human report also lists `non claims:`):
@@ -85,75 +71,56 @@ Selected output (the human report also lists `non claims:`):
 profile: technocore.msg.v1
 decision: verified
 signature status: valid
-reasons: none
 exit: 0
 ```
 
-The checked-in sample maps one receipt published by a third party at an [immutable GitHub commit](https://github.com/vaibhav0xq/technocore-gauntlet/blob/661ed9647e33f3eddf18deea716434be6a7a4823/evidence/technocore-receipts.json). It is a one-sample offline compatibility check, not proof that the source is authentic or that Technocore stored the record. See the [compatibility record](docs/technocore-receipt-compatibility.md).
+## Troubleshooting
 
-### See a signature fail after one-byte tampering
+| Problem | Check |
+| --- | --- |
+| Node.js is too old | Run `node --version`; the CLI requires Node.js 22 or newer. |
+| Checksum verification fails | Stop. Re-download the archive and its matching `.tar.sha256` from the same GitHub Release. |
+| Archive and checksum pair do not match | The two filenames must contain the same commit `<SHA>`; verify the manifest before installing. |
+| `valley-technocore` is not found after installation | Check the global npm binary directory is on `PATH`, then open a new shell and retry `valley-technocore --help`. |
+| Offline npm install fails or tries the network | Use the exact local tarball command above with `--offline`; confirm the tarball path is valid and do not weaken the offline flag. |
+| A `verified` result seems to prove identity or authorship | It does not; read [What verification means](#what-verification-means), then use the [issues](https://github.com/hubofvalley/Valley-of-Technocore/issues) for anything else. |
 
-Keep the original sample intact and create a second local file whose text differs by one printable character, so its derived signing bytes change:
+## What verification means
 
-```bash
-node -e "const fs = require('node:fs'); const x = JSON.parse(fs.readFileSync('fixtures/technocore-msg-v1-gauntlet.json', 'utf8')); x.text += '!'; fs.writeFileSync('technocore-tampered.json', JSON.stringify(x));"
+A `verified` result means the supplied Ed25519 key validates the signature over the derived Technocore signing bytes. Supported receipt forms, evidence, and provenance are checked according to their respective local profiles.
 
-node ./bin/valley-technocore.js message verify --format human \
-  < technocore-tampered.json
-printf 'exit: %s\n' "$?"
-```
+It does not establish who controls that key, where the input came from, whether a Technocore server stored it, or whether the record is recent, eligible, rewarded, recognised, or authoritative. See the [first-run verification flow](docs/first-run-flow.md) and [CLI and local receipt guide](docs/cli-and-local-receipts.md) for profile details.
 
-Expected result: `decision: invalid`, `signature status: invalid`, and `exit: 3`. Remove `technocore-tampered.json` when finished or keep it out of commits.
+## Common workflows
 
-## Verify your own local receipt export
-
-If you already have one exported receipt with its detached signature, verify it in one step:
-
-```bash
-node ./bin/valley-technocore.js receipt verify --format human \
-  < exported-receipt.json
-printf 'exit: %s\n' "$?"
-```
-
-The normaliser accepts one object in these bounded shapes:
-
-```json
-{"room":"lobby","did":"did:key:z...","nonce":"123","text":"hello","signature":"..."}
-```
-
-```json
-{"room":"lobby","receipt":{"did":"did:key:z...","nonce":"123","text":"hello","signature":"..."}}
-```
-
-It also accepts canonical `technocore.msg.v1` input. It rejects unknown fields, ambiguous collections, and a missing detached signature. For the complete local-receipt contract, see [CLI and local receipt workflow](docs/cli-and-local-receipts.md).
-
-## Public compatibility corpus
-
-The checked-in [compatibility corpus](fixtures/technocore-msg-v1-compatibility.json) pins Unicode sweep, byte-exact NFC, maximum nonce, and malformed-input boundaries. It is useful for independent implementations and remains entirely offline. See [its contract and limits](docs/compatibility-corpus.md).
-
-## Read the result correctly
-
-`decision: verified` means the supplied public key verifies the detached signature over the derived Technocore signing bytes: `room|nonce|swept-text`. It does not make the message trusted or authoritative. A raw-text change that Technocore sweep removes may leave those signing bytes unchanged.
-
-The human report deliberately lists its non-claims, including `identity_not_established`, `source_authenticity_not_established`, and `server_inclusion_not_established`.
-
-This distinction matters because current documented Technocore room-read responses do not return detached signatures. A live read can be a separate source of message fields, but it cannot by itself recreate a complete offline verification input.
-
-## Build a local provenance bundle
-
-When another, separate posting tool has already captured both its signed request and the response record it received, package that pair without retrying the request or contacting Technocore:
+Verify a signed message or local receipt:
 
 ```bash
-node ./bin/valley-technocore.js provenance create < captured-request-and-response.json > provenance.json
-node ./bin/valley-technocore.js provenance verify --format human < provenance.json
-printf 'exit: %s\n' "$?"
+valley-technocore message verify --format human < message.json
+valley-technocore receipt verify --format human < receipt.json
 ```
 
-The capture has exactly this shape: a canonical `technocore.msg.v1` request plus the response's matching `posted` record and HTTP `200` status. The CLI requires the DID, nonce, and swept text to match exactly. A valid bundle proves only that this supplied request signature verifies and that the supplied response record matches it. It does not prove that Technocore included, retained, or authorised the record.
+Verify one supplied object when its profile is not known in advance:
+
+```bash
+valley-technocore verify --format human < supplied.json
+```
+
+Verify a captured signed request and matching response record:
+
+```bash
+valley-technocore provenance verify --format human < provenance.json
+```
+
+Verify newline-delimited inputs:
+
+```bash
+valley-technocore batch verify message < messages.ndjson
+```
+
+See the [integrator contract](docs/integrator-contract.md) for stable machine output, limits, and profile-specific input rules.
 
 ## Commands and exit codes
-
-The commands below use the installed CLI form. Complete the Pilot installation above before using `valley-technocore` as a bare command.
 
 ```text
 valley-technocore verify [--format json|human]
@@ -177,39 +144,25 @@ Legacy aliases remain available: `create-evidence`, `verify-evidence`, and `veri
 | `2` | Malformed input, unsupported shape, or command error. |
 | `3` | Input was processable but its detached signature or payload hash was invalid. |
 
+### Output contract
+
 Default output, and explicit `--format json` output, is one canonical JSON object on stdout without a trailing newline. `--format human` is available only for verification and report commands. Evidence creation and receipt normalisation always emit canonical JSON artefacts; they reject `--format human`.
 
-`batch verify` is deliberately different: it consumes NDJSON from standard input and emits one canonical JSON object per line (JSONL), ending with a summary record. It accepts a fixed profile for the whole stream: `evidence`, `message`, or `receipt`. It does not accept a directory or any path, so every byte remains explicitly supplied through standard input.
+`batch verify` consumes NDJSON from standard input and emits one canonical JSON object per line, ending with a summary record. It accepts exactly one fixed profile for the whole stream: `evidence`, `message`, or `receipt`.
 
-```sh
-node ./bin/valley-technocore.js batch verify message < supplied-messages.ndjson
-```
+For human verification output, `evidence verify`: the report has no `reasons` field; inspect its payload-hash and signature statuses instead.
 
-Each item record has its one-based `index`, `profile`, `outcome` (`verified`, `invalid`, or `malformed`), and either the existing verifier `report` or a bounded validation `error`. The final record has `type: "summary"` and deterministic totals. Exit `0` means every record verified; exit `3` means one or more processable records were invalid; exit `2` means one or more records were malformed (and takes precedence over exit `3`). No batch result establishes identity, source authenticity, server inclusion, eligibility, reward, or authority.
+## Security model
 
-## Offline and safety boundary
+The verifier consumes supplied input through standard input, reports results on standard output, and sends errors to standard error. It is offline and stateless: it writes no files, makes no network requests, follows no URLs, opens no wallet, reads no private key, signs or generates no keys, contacts no server, and performs no reward or eligibility action. Read the full [FLOP skill contract](docs/flop-technocore-skill-v1-contract.md) and [integrator contract](docs/integrator-contract.md) for the enforceable boundaries.
 
-The runtime reads one object from local standard input and writes its result to standard output. It makes no network requests and has no URL fetching, wallet access, private-key handling or generation, server process, subprocess execution, watcher, cron job, token logic, or deployment behaviour.
+## Documentation
 
-The command shown above only reads repository files. Fetching a third-party receipt, if you choose to do so, is a separate action outside the verifier.
-
-Generated evidence grants no permission to act. Independently validate any source or external claim before relying on it.
-
-## Troubleshooting
-
-- `node --version` is below 22: install Node.js 22 or newer, then retry.
-- `MODULE_NOT_FOUND`: run the command from the cloned repository root and keep the leading `./` in `./bin/valley-technocore.js`.
-- Exit `2`: check that the receipt has exactly one supported object shape, an allowed room and nonce, and an unpadded base64url detached signature.
-- Exit `3` from `message verify` or `receipt verify`: the input was readable but the detached signature did not verify. Inspect `signature status` and `reasons`.
-- Exit `3` from `evidence verify`: the input was readable but its payload hash or detached signature did not verify. Inspect `payload hash status` and `signature status`; this report has no `reasons` field.
-- JSON appears beside your shell prompt: expected. JSON reports deliberately have no trailing newline; redirect to a file or print a newline after the command.
-
-For the full reproducibility walkthrough, see [testing and reproducibility](docs/testing-and-reproducibility.md), the [terminal tutorial](docs/terminal-tutorial.md), and the [terminal video plan](docs/terminal-video-plan.md).
-
-## Release status
-
-The planned `v0.2.1` stable release adds the FLOP Technocore Skill v1 verifier adapter. Its pull request is still under review; no `v0.2.1` tag or GitHub release exists yet. Existing `v0.2.0` verifier CLI behaviour is unchanged. The package remains `private: true` and is not published to npm. See [release readiness](docs/release-readiness.md) for the exact pre-publication and post-release contract.
-
-## Licence
-
-Apache-2.0. See [LICENSE](LICENSE).
+- [CLI and local receipts](docs/cli-and-local-receipts.md)
+- [First-run verification flow](docs/first-run-flow.md)
+- [Compatibility corpus](docs/compatibility-corpus.md)
+- [Testing and reproducibility](docs/testing-and-reproducibility.md)
+- [Terminal tutorial](docs/terminal-tutorial.md)
+- [FLOP Skill v1 acceptance and runtime evidence](docs/flop-technocore-skill-v1-acceptance.md)
+- [Release readiness](docs/release-readiness.md)
+- [Changelog](CHANGELOG.md) · [GitHub Releases](https://github.com/hubofvalley/Valley-of-Technocore/releases) · [Licence](LICENSE)
