@@ -9,6 +9,8 @@ An independent, unofficial tool by Grand Valley.
 ## Contents
 
 - [What this verifies](#what-this-verifies)
+- [Pilot installation (not yet available)](#pilot-installation-not-yet-available)
+- [Run directly from a verified source checkout](#run-directly-from-a-verified-source-checkout)
 - [Quick demo](#quick-demo)
 - [First-run universal verification](docs/first-run-flow.md)
 - [P0.5 first-run proof](docs/first-run-proof-p05.md)
@@ -32,6 +34,26 @@ Given a complete local input, the CLI can:
 - show that changing input in a way that changes the derived signing bytes invalidates a detached signature.
 
 It cannot establish source authenticity, DID ownership, authorship beyond control of the supplied key, server inclusion, recency, replay protection, contribution, recognition, eligibility, rewards, or authority.
+
+## Pilot installation (not yet available)
+
+A commit-pinned pilot archive is not available yet. When one is cut and its
+SHA-256 manifest is published, verify the archive before installing it:
+
+```bash
+sha256sum -c valley-of-technocore-pilot-<SHA>.tar.sha256
+npm install -g --ignore-scripts --offline --no-audit --no-fund ./valley-of-technocore-pilot-<SHA>.tar
+valley-technocore --help
+```
+
+This local installation path performs no network access and is not an npm
+registry release. Do not run it until the commit-pinned pilot archive and its
+published digest are available.
+
+## Run directly from a verified source checkout
+
+This is the canonical source-checkout and audit mode. It does not require an
+installed global binary; run the commands from the cloned repository root.
 
 ## First-run universal verification
 
@@ -130,6 +152,8 @@ printf 'exit: %s\n' "$?"
 The capture has exactly this shape: a canonical `technocore.msg.v1` request plus the response's matching `posted` record and HTTP `200` status. The CLI requires the DID, nonce, and swept text to match exactly. A valid bundle proves only that this supplied request signature verifies and that the supplied response record matches it. It does not prove that Technocore included, retained, or authorised the record.
 
 ## Commands and exit codes
+
+The commands below use the installed CLI form. Complete the Pilot installation above before using `valley-technocore` as a bare command.
 
 ```text
 valley-technocore verify [--format json|human]
