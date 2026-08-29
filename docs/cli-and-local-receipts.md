@@ -4,6 +4,11 @@ The verifier stays offline and stateless. It reads one JSON object from standard
 
 ## Command hierarchy
 
+The commands below use the installed CLI form. Complete the Pilot installation
+in the [README](../README.md) before using `valley-technocore` as a bare
+command. Until a pilot archive is available, run the source-checkout form from
+the repository root: `node ./bin/valley-technocore.js ...`.
+
 ```text
 valley-technocore verify [--format json|human]
 valley-technocore evidence create
