@@ -393,7 +393,7 @@ test('clean-room process trace requires usable strace and shows no file writes o
     const syscalls = readFileSync(trace, 'utf8');
     assert.ok(syscalls.length > 0, 'strace produced no usable trace output');
     assert.match(syscalls, /\bexecve\(/u, 'strace produced no process execution trace');
-    const execveCount = (syscalls.match(/\bexecve\(/gu) ?? []).length;
+    const execveCount = (syscalls.match(/\b(?:execve|execveat)\(/gu) ?? []).length;
     assert.equal(
       execveCount,
       onPinnedNode ? 2 : 1,
