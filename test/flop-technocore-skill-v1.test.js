@@ -16,6 +16,13 @@ const compatibility = JSON.parse(readFileSync(new URL('../fixtures/technocore-ms
 const evidence = readFileSync(new URL('../fixtures/valid-evidence.json', import.meta.url));
 const capture = JSON.parse(readFileSync(new URL('../fixtures/technocore-provenance-capture-v1.json', import.meta.url), 'utf8'));
 const receipt = Buffer.from(JSON.stringify((() => { const x = JSON.parse(message); return { room: x.room, did: x.did, nonce: x.nonce, text: x.text, signature: x.signature_b64u }; })()));
+const runningNodeMajor = Number(process.versions.node.split('.')[0]);
+const pinnedNodeMajor = manifest.nodeMajor;
+const onPinnedNode = runningNodeMajor === pinnedNodeMajor;
+
+function pinnedTest(name, fn) {
+  test(name, { skip: onPinnedNode ? false : `requires pinned Node ${pinnedNodeMajor}; Node ${runningNodeMajor} rejection is tested separately` }, fn);
+}
 
 function run(profile, input) {
   return spawnSync(process.execPath, [adapter, profile, 'verify'], { cwd: root, input });
@@ -85,7 +92,7 @@ function assertSameResult(profile, input) {
   assert.deepEqual(actual.stderr, expected.stderr, `${profile} stderr`);
 }
 
-test('adapter exposes exactly four fixed verifier vectors and dogfoods checked-in fixtures', async () => {
+pinnedTest('adapter exposes exactly four fixed verifier vectors and dogfoods checked-in fixtures', async () => {
   assert.deepEqual([...Object.keys(manifest.runtimeFiles)], [
     'package.json', 'bin/valley-technocore.js', 'src/attestation.js', 'src/batch-cli.js', 'src/cli.js', 'src/format.js', 'src/provenance.js', 'src/receipt-cli.js', 'src/receipt.js', 'src/technocore-message.js', 'src/verify-cli.js'
   ]);
@@ -100,7 +107,7 @@ test('adapter exposes exactly four fixed verifier vectors and dogfoods checked-i
   assert.equal(result.status, 'verified');
 });
 
-test('adapter maps native valid, cryptographic-invalid, and rejected results exactly', async () => {
+pinnedTest('adapter maps native valid, cryptographic-invalid, and rejected results exactly', async () => {
   const invalid = JSON.parse(message); invalid.text += '!';
   assert.equal((await invoke('message', Buffer.from(JSON.stringify(invalid)))).status, 'cryptographic_invalid');
   for (const input of [Buffer.from('{'), Buffer.from(JSON.stringify({ ...JSON.parse(message), schema: 'technocore.msg.v2' }))]) {
@@ -110,7 +117,7 @@ test('adapter maps native valid, cryptographic-invalid, and rejected results exa
   }
 });
 
-test('adapter preserves direct CLI equivalence across all four profiles and failure classes', async () => {
+pinnedTest('adapter preserves direct CLI equivalence across all four profiles and failure classes', async () => {
   const messageInvalid = structuredClone(JSON.parse(message)); messageInvalid.text += '!';
   const receiptValue = JSON.parse(receipt); const receiptInvalid = { ...receiptValue, text: `${receiptValue.text}!` };
   const evidenceValue = JSON.parse(evidence); const evidenceInvalid = structuredClone(evidenceValue);
@@ -133,7 +140,7 @@ test('adapter preserves direct CLI equivalence across all four profiles and fail
   assertSameResult('message', Buffer.from([0xff, 0xfe, 0xfd]));
 });
 
-test('ambiguous, prompt-injection, URL/path/command, and signer inputs never escape as actions', async () => {
+pinnedTest('ambiguous, prompt-injection, URL/path/command, and signer inputs never escape as actions', async () => {
   const base = JSON.parse(message);
   const known = await invoke('message', message);
   assert.equal(known.status, 'verified');
@@ -163,7 +170,7 @@ test('ambiguous, prompt-injection, URL/path/command, and signer inputs never esc
   assert.match(known.report.non_claims.join(','), /identity_not_established/u);
 });
 
-test('oversize, unsupported vectors, and runtime deviations fail closed', async () => {
+pinnedTest('oversize, unsupported vectors, and runtime deviations fail closed', async () => {
   for (const profile of ['message', 'receipt', 'evidence', 'provenance']) {
     assert.equal((await invoke(profile, Buffer.alloc(1024 * 1024 + 1))).status, 'input_rejected', profile);
   }
@@ -174,7 +181,7 @@ test('oversize, unsupported vectors, and runtime deviations fail closed', async 
   }
 });
 
-test('wrong pin, runtime member, and missing executable disable the adapter before invocation', () => {
+pinnedTest('wrong pin, runtime member, and missing executable disable the adapter before invocation', () => {
   for (const mutate of [
     ({ manifestPath }) => {
       const copy = JSON.parse(readFileSync(manifestPath, 'utf8'));
@@ -201,7 +208,7 @@ test('wrong pin, runtime member, and missing executable disable the adapter befo
   }
 });
 
-test('runtime deviations return unavailable without accepting forged verifier output', () => {
+pinnedTest('runtime deviations return unavailable without accepting forged verifier output', () => {
   const cases = [
     `process.stdout.write('{}');`,
     `process.stderr.write('unexpected\\n');`,
@@ -222,7 +229,7 @@ test('runtime deviations return unavailable without accepting forged verifier ou
   }
 });
 
-test('the adapter-enforced V8 old-space limit is active in its verifier child', () => {
+pinnedTest('the adapter-enforced V8 old-space limit is active in its verifier child', () => {
   const nativeReport = native('message', message).stdout.toString('utf8');
   const result = runMutatedCopy(({ fakeBinaryPath, adapterPath }) => replacePinnedBinary(
     { fakeBinaryPath, adapterPath }, `#!/usr/bin/env node
@@ -238,7 +245,7 @@ else process.stdout.write(${JSON.stringify(nativeReport)});
   assert.equal(result.stderr.toString('utf8'), 'error: verifier unavailable\n');
 });
 
-test('timeout and per-invocation pin revalidation fail closed', () => {
+pinnedTest('timeout and per-invocation pin revalidation fail closed', () => {
   const timeout = runMutatedCopy(({ fakeBinaryPath, adapterPath }) => replacePinnedBinary(
     { fakeBinaryPath, adapterPath }, '#!/usr/bin/env node\nsetInterval(() => {}, 100);\n'
   ));
@@ -270,14 +277,14 @@ test('timeout and per-invocation pin revalidation fail closed', () => {
   }
 });
 
-test('pin digest and runtime members are checked before invocation', async () => {
+pinnedTest('pin digest and runtime members are checked before invocation', async () => {
   const archive = readFileSync(new URL('../skill/flop-technocore-v1/vendor/valley-of-technocore-v0.2.0.tar', import.meta.url));
   assert.equal(archive.length, manifest.archive.bytes);
   assert.equal(createHash('sha256').update(archive).digest('hex'), manifest.archive.sha256);
   assert.equal((await invoke('message', message)).status, 'verified');
 });
 
-test('clean-room dogfood leaves files unchanged and adapter has no network/action imports', async () => {
+pinnedTest('clean-room dogfood leaves files unchanged and adapter has no network/action imports', async () => {
   const before = snapshotTree(root);
   const result = await invoke('evidence', evidence);
   const after = snapshotTree(root);
@@ -304,7 +311,7 @@ test('clean-room dogfood leaves files unchanged and adapter has no network/actio
   }
 });
 
-test('clean-room process trace requires strace and shows no file writes or network syscalls', () => {
+pinnedTest('clean-room process trace requires strace and shows no file writes or network syscalls', () => {
   const straceVersion = spawnSync('strace', ['-V'], { encoding: 'utf8' });
   assert.equal(straceVersion.status, 0, 'strace is a mandatory Gate C prerequisite');
   const temporary = mkdtempSync(join(tmpdir(), 'flop-technocore-trace-'));
@@ -325,4 +332,13 @@ test('clean-room process trace requires strace and shows no file writes or netwo
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }
+});
+
+test('adapter rejects an unpinned Node major', { skip: onPinnedNode ? 'covered by the Node 22 CI lane' : false }, async () => {
+  const result = await invoke('message', message);
+  assert.equal(result.status, 'unavailable');
+  const processResult = run('message', message);
+  assert.equal(processResult.status, 1);
+  assert.equal(processResult.stdout.length, 0);
+  assert.equal(processResult.stderr.toString('utf8'), 'error: verifier unavailable\n');
 });
