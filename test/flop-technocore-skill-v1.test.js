@@ -50,7 +50,7 @@ function snapshotTree(directory) {
   return entries;
 }
 
-function runMutatedCopy(mutate) {
+function withMutatedCopy(mutate, callback) {
   const temporary = mkdtempSync(join(tmpdir(), 'flop-technocore-v1-'));
   const copy = join(temporary, 'repo');
   const copySkill = join(copy, 'skill/flop-technocore-v1');
@@ -59,20 +59,28 @@ function runMutatedCopy(mutate) {
   cpSync(join(root, 'src'), join(copy, 'src'), { recursive: true });
   cpSync(join(root, 'package.json'), join(copy, 'package.json'));
   cpSync(join(root, 'skill/flop-technocore-v1'), copySkill, { recursive: true });
+  const paths = {
+    copy,
+    manifestPath: join(copySkill, 'runtime-manifest.json'),
+    binaryPath: join(copy, 'bin/valley-technocore.js'),
+    fakeBinaryPath: join(copy, 'bin/flop-test-verifier.js'),
+    adapterPath: join(copySkill, 'adapter.js')
+  };
   try {
-    mutate({
-      manifestPath: join(copySkill, 'runtime-manifest.json'),
-      binaryPath: join(copy, 'bin/valley-technocore.js'),
-      fakeBinaryPath: join(copy, 'bin/flop-test-verifier.js'),
-      adapterPath: join(copySkill, 'adapter.js')
-    });
-    return spawnSync(process.execPath, [join(copySkill, 'adapter.js'), 'message', 'verify'], {
-      cwd: copy,
-      input: message
-    });
+    mutate(paths);
+    return callback(paths);
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }
+}
+
+function runMutatedCopy(mutate) {
+  return withMutatedCopy(mutate, ({ copy, adapterPath }) => {
+    return spawnSync(process.execPath, [adapterPath, 'message', 'verify'], {
+      cwd: copy,
+      input: message
+    });
+  });
 }
 
 function replacePinnedBinary({ fakeBinaryPath, adapterPath }, source) {
@@ -82,6 +90,21 @@ function replacePinnedBinary({ fakeBinaryPath, adapterPath }, source) {
     "join(REPO_ROOT, 'bin/valley-technocore.js')",
     "join(REPO_ROOT, 'bin/flop-test-verifier.js')"
   ));
+}
+
+function getHeapLimit(nodeOptions) {
+  const env = { LANG: 'C', LC_ALL: 'C' };
+  if (nodeOptions) env.NODE_OPTIONS = nodeOptions;
+  const result = spawnSync(process.execPath, [
+    '--input-type=module',
+    '-e',
+    "import v8 from 'node:v8'; process.stdout.write(String(v8.getHeapStatistics().heap_size_limit));"
+  ], { env, encoding: 'utf8' });
+  assert.equal(result.error, undefined, 'heap-limit probe could not execute');
+  assert.equal(result.status, 0, result.stderr);
+  const limit = Number(result.stdout);
+  assert.ok(Number.isSafeInteger(limit) && limit > 0, 'heap-limit probe returned no limit');
+  return limit;
 }
 
 function assertSameResult(profile, input) {
@@ -230,20 +253,57 @@ pinnedTest('runtime deviations return unavailable without accepting forged verif
   }
 });
 
-pinnedTest('the adapter-enforced V8 old-space limit is active in its verifier child', () => {
+pinnedTest('the adapter-enforced V8 old-space limit is enforced in its verifier child', () => {
   const nativeReport = native('message', message).stdout.toString('utf8');
-  const result = runMutatedCopy(({ fakeBinaryPath, adapterPath }) => replacePinnedBinary(
-    { fakeBinaryPath, adapterPath }, `#!/usr/bin/env node
+  const uncappedLimit = getHeapLimit();
+  const cappedLimit = getHeapLimit('--max-old-space-size=128');
+  const margin = 32 * 1024 * 1024;
+  assert.ok(
+    uncappedLimit > cappedLimit + margin,
+    'runner does not provide enough heap-limit separation for an enforcement probe'
+  );
+  const target = cappedLimit + margin;
+  const pressureSource = `#!/usr/bin/env node
 import v8 from 'node:v8';
-if (v8.getHeapStatistics().heap_size_limit <= 384 * 1024 * 1024) process.exitCode = 1;
-else process.stdout.write(${JSON.stringify(nativeReport)});
-`
-  ));
-  // A missing or ineffective NODE_OPTIONS cap would make the forged native
-  // result look valid. A capped child exits 1 and must fail closed instead.
-  assert.equal(result.status, 1);
-  assert.equal(result.stdout.length, 0);
-  assert.equal(result.stderr.toString('utf8'), 'error: verifier unavailable\n');
+const retained = [];
+const target = ${target};
+while (v8.getHeapStatistics().used_heap_size <= target) {
+  const batch = retained.length;
+  retained.push(Array.from({ length: 262144 }, (_, index) => ({ batch, index })));
+}
+process.stdout.write(${JSON.stringify(nativeReport)});
+`;
+  withMutatedCopy(
+    ({ fakeBinaryPath, adapterPath }) => replacePinnedBinary({ fakeBinaryPath, adapterPath }, pressureSource),
+    ({ copy, adapterPath }) => {
+      const cappedAdapter = readFileSync(adapterPath, 'utf8');
+      const uncappedAdapter = cappedAdapter.replace(
+        "    LC_ALL: 'C',\n    NODE_OPTIONS: `--max-old-space-size=${MAX_HEAP_MB}`",
+        "    LC_ALL: 'C'"
+      );
+      assert.notEqual(uncappedAdapter, cappedAdapter, 'test could not remove the child heap cap');
+      writeFileSync(adapterPath, uncappedAdapter);
+      const control = spawnSync(process.execPath, [adapterPath, 'message', 'verify'], {
+        cwd: copy,
+        input: message
+      });
+      assert.equal(control.error, undefined, 'uncapped control could not execute');
+      assert.equal(control.status, 0, control.stderr);
+      assert.deepEqual(control.stdout, Buffer.from(nativeReport));
+      assert.equal(control.stderr.length, 0);
+
+      writeFileSync(adapterPath, cappedAdapter);
+      const enforced = spawnSync(process.execPath, [adapterPath, 'message', 'verify'], {
+        cwd: copy,
+        input: message
+      });
+      // The capped child must hit its actual V8 allocation limit before it
+      // can emit the forged report; the adapter must fail closed on the crash.
+      assert.equal(enforced.status, 1);
+      assert.equal(enforced.stdout.length, 0);
+      assert.equal(enforced.stderr.toString('utf8'), 'error: verifier unavailable\n');
+    }
+  );
 });
 
 pinnedTest('timeout and per-invocation pin revalidation fail closed', () => {
@@ -312,8 +372,11 @@ pinnedTest('clean-room dogfood leaves files unchanged and adapter has no network
   }
 });
 
-pinnedTest('clean-room process trace requires strace and shows no file writes or network syscalls', () => {
+test('clean-room process trace requires usable strace and shows no file writes or network syscalls', () => {
+  assert.equal(process.platform, 'linux', 'Gate C requires Linux strace');
+  assert.ok([22, pinnedNodeMajor].includes(runningNodeMajor), 'unsupported Gate C Node lane');
   const straceVersion = spawnSync('strace', ['-V'], { encoding: 'utf8' });
+  assert.equal(straceVersion.error, undefined, 'strace is a mandatory Gate C prerequisite');
   assert.equal(straceVersion.status, 0, 'strace is a mandatory Gate C prerequisite');
   const temporary = mkdtempSync(join(tmpdir(), 'flop-technocore-trace-'));
   const trace = join(temporary, 'trace.log');
@@ -322,14 +385,35 @@ pinnedTest('clean-room process trace requires strace and shows no file writes or
       '-f', '-qq', '-e', 'trace=%file,%network', '-o', trace,
       process.execPath, adapter, 'evidence', 'verify'
     ], { cwd: root, input: evidence });
-    assert.equal(result.status, 0);
+    assert.equal(result.error, undefined, 'strace could not execute the clean-room trace');
+    // Node 24 proves the adapter-to-verifier trace. Node 22 remains a
+    // compatibility lane and must still execute the mandatory tracer and
+    // adapter preflight rather than silently skipping this assurance check.
+    assert.equal(result.status, onPinnedNode ? 0 : 1);
     const syscalls = readFileSync(trace, 'utf8');
+    assert.ok(syscalls.length > 0, 'strace produced no usable trace output');
+    assert.match(syscalls, /\bexecve\(/u, 'strace produced no process execution trace');
+    const execveCount = (syscalls.match(/\b(?:execve|execveat)\(/gu) ?? []).length;
+    assert.equal(
+      execveCount,
+      onPinnedNode ? 2 : 1,
+      onPinnedNode
+        ? 'strace did not follow the pinned verifier child execve'
+        : 'unpinned Node unexpectedly started the verifier child'
+    );
+    assert.equal(
+      syscalls.includes('/bin/valley-technocore.js'),
+      onPinnedNode,
+      onPinnedNode
+        ? 'pinned verifier path was not observed in the trace'
+        : 'unpinned Node unexpectedly reached the verifier path'
+    );
     // Node uses local AF_UNIX socketpairs to implement stdio pipes; those are
     // the permitted adapter-to-pinned-CLI IPC, not network sockets.
-    assert.doesNotMatch(syscalls, /\bAF_INET6?\b/u);
+    assert.doesNotMatch(syscalls, /\b(?:socket|connect|sendto|sendmsg|recvfrom|recvmsg)\([^\n]*AF_INET6?\b/u);
     assert.doesNotMatch(syscalls, /\bconnect\(/u);
-    assert.doesNotMatch(syscalls, /\b(open|openat|creat)\([^\n]*(?:O_WRONLY|O_RDWR|O_CREAT|O_TRUNC)/u);
-    assert.doesNotMatch(syscalls, /\b(?:rename|renameat|renameat2|unlink|unlinkat|mkdir|mkdirat|rmdir|symlink|link)\(/u);
+    assert.doesNotMatch(syscalls, /\b(?:open|openat|openat2|creat)\([^\n]*(?:O_WRONLY|O_RDWR|O_CREAT|O_TRUNC|O_APPEND)/u);
+    assert.doesNotMatch(syscalls, /\b(?:rename|renameat|renameat2|unlink|unlinkat|mkdir|mkdirat|rmdir|symlink|symlinkat|link|linkat|truncate|mknod|mknodat)\(/u);
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }
