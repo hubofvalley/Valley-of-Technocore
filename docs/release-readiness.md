@@ -5,12 +5,28 @@ releases and release candidates. It records release metadata, not authority: it
 does not establish identity, repository control, source authenticity,
 contribution, eligibility, reward, or Technocore/FLOP recognition.
 
+## v0.2.2 stable preparation
+
+- Stable package version: `0.2.2`; the package remains `private: true`.
+- Target stable tag: `v0.2.2`; this local preparation does not publish a
+  GitHub release.
+- This patch carries the merged installation-UX documentation and Gate B/C
+  runtime-assurance fixes. Existing verifier CLI behaviour is unchanged.
+- The release-contract artefacts are `valley-of-technocore-v0.2.2.tar` and its
+  exact `valley-of-technocore-v0.2.2.tar.sha256` manifest, reproduced with:
+  `git archive --format=tar --prefix=valley-of-technocore-v0.2.2/ v0.2.2`.
+- The separately gated pilot artefact uses the npm-installable `package/` root
+  and is named `valley-of-technocore-pilot-<full-release-commit-sha>.tar` with
+  a matching two-space SHA-256 manifest. It is not a substitute for the
+  versioned release-contract archive. Its exact filename and digest are
+  recorded only after the release commit is frozen, avoiding a self-reference
+  in the archive contents.
+
 ## v0.2.1 stable release
 
 - Stable package version: `0.2.1`; the package remains `private: true`.
 - Stable tag: `v0.2.1`.
-- The GitHub release is created only after this tagged commit and its required
-  artefacts have passed the release contract.
+- Published GitHub release: [Valley of Technocore v0.2.1](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.2.1).
 - This additive release includes the FLOP Technocore Skill v1 verifier-only
   adapter. Existing `v0.2.0` verifier CLI commands, output, and exit behaviour
   are unchanged; `v0.2.0` users are unaffected.

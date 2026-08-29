@@ -208,7 +208,12 @@ For the full reproducibility walkthrough, see [testing and reproducibility](docs
 
 ## Release status
 
-The planned `v0.2.1` stable release adds the FLOP Technocore Skill v1 verifier adapter. Its pull request is still under review; no `v0.2.1` tag or GitHub release exists yet. Existing `v0.2.0` verifier CLI behaviour is unchanged. The package remains `private: true` and is not published to npm. See [release readiness](docs/release-readiness.md) for the exact pre-publication and post-release contract.
+The published `v0.2.1` stable release adds the FLOP Technocore Skill v1
+verifier adapter. `v0.2.2` is the next patch release preparation and carries
+the installation documentation plus Gate B/C runtime-assurance fixes; existing
+verifier CLI behaviour remains unchanged. The package remains `private: true`
+and is not published to npm. See [release readiness](docs/release-readiness.md)
+for the exact pre-publication and post-release contract.
 
 ## Licence
 

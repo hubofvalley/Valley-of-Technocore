@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.2
+
+This patch release carries the post-`v0.2.1` installation documentation and
+Gate B/C runtime-assurance fixes. The package remains private and is not
+published to npm.
+
+- Documents the verified source-checkout path and the separately gated,
+  commit-pinned pilot installation path.
+- Makes the FLOP adapter's Linux `strace` assurance non-skippable and counts
+  both `execve` and `execveat` forms in the process trace.
+- Adds an active V8 old-space enforcement probe and records the host-envelope
+  pilot evidence without changing verifier CLI behaviour.
+
 ## 0.2.1
 
 This patch release adds the FLOP Technocore Skill v1 verifier adapter. The
