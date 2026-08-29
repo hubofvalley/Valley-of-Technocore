@@ -5,20 +5,33 @@ releases and release candidates. It records release metadata, not authority: it
 does not establish identity, repository control, source authenticity,
 contribution, eligibility, reward, or Technocore/FLOP recognition.
 
-## v0.2.0 stable preparation
+## v0.2.1 stable release
+
+- Stable package version: `0.2.1`; the package remains `private: true`.
+- Stable tag: `v0.2.1`.
+- The GitHub release is created only after this tagged commit and its required
+  artefacts have passed the release contract.
+- This additive release includes the FLOP Technocore Skill v1 verifier-only
+  adapter. Existing `v0.2.0` verifier CLI commands, output, and exit behaviour
+  are unchanged; `v0.2.0` users are unaffected.
+- Required stable artefacts are `valley-of-technocore-v0.2.1.tar` and its exact
+  `valley-of-technocore-v0.2.1.tar.sha256` manifest.
+- The archive is reproduced from the release tag with:
+  `git archive --format=tar --prefix=valley-of-technocore-v0.2.1/ v0.2.1`.
+
+## v0.2.0 stable reference
 
 - Stable package version: `0.2.0`; the package remains `private: true`.
-- Intended stable tag: `v0.2.0`.
-- This local preparation creates no tag, GitHub release, archive upload, or
-  release attestation. The published stable `v0.1.0` record remains separate.
+- Stable tag: `v0.2.0`.
+- Published GitHub release: [Valley of Technocore v0.2.0](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.2.0).
 - Required stable artefacts are `valley-of-technocore-v0.2.0.tar` and its exact
   `valley-of-technocore-v0.2.0.tar.sha256` manifest.
-- The archive is reproduced from `HEAD` with:
-  `git archive --format=tar --prefix=valley-of-technocore-v0.2.0/ HEAD`.
+- The archive is reproduced from the immutable `v0.2.0` tag with:
+  `git archive --format=tar --prefix=valley-of-technocore-v0.2.0/ v0.2.0`.
 - Local mode binds the package version and `private` flag to the committed
   `HEAD:package.json`, even if the working-tree package file was edited. The
   supplied archive path must use the exact versioned filename above.
-- Validate the local stable preparation without GitHub access:
+- Reproduce the stable archive locally without GitHub access:
 
   ```bash
   npm run check-release-contract -- \
@@ -26,7 +39,7 @@ contribution, eligibility, reward, or Technocore/FLOP recognition.
     --archive /path/to/valley-of-technocore-v0.2.0.tar
   ```
 
-  The checker reproduces `HEAD`, compares archive bytes, checks the exact
+  The checker reproduces `v0.2.0`, compares archive bytes, checks the exact
   checksum manifest, and reports the stable commit and digest. Local mode also
   requires the working `package.json` metadata to match `HEAD:package.json` and
   requires the archive basename to be exactly

@@ -184,7 +184,7 @@ For the full reproducibility walkthrough, see [testing and reproducibility](docs
 
 ## Release status
 
-Stable `v0.1.0` is published on GitHub: [release notes, deterministic source archive, and SHA-256 manifest](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.1.0). Stable `v0.2.0` is prepared locally for the release-owner gate; its tag and GitHub release are not created by this checkout. The package remains `private: true` and is not published to npm. See [release readiness](docs/release-readiness.md) for the exact pre-publication and post-release contract.
+The planned `v0.2.1` stable release adds the FLOP Technocore Skill v1 verifier adapter. Its pull request is still under review; no `v0.2.1` tag or GitHub release exists yet. Existing `v0.2.0` verifier CLI behaviour is unchanged. The package remains `private: true` and is not published to npm. See [release readiness](docs/release-readiness.md) for the exact pre-publication and post-release contract.
 
 ## Licence
 

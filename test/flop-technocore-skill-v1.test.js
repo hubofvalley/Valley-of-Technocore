@@ -94,8 +94,9 @@ function assertSameResult(profile, input) {
 
 pinnedTest('adapter exposes exactly four fixed verifier vectors and dogfoods checked-in fixtures', async () => {
   assert.deepEqual([...Object.keys(manifest.runtimeFiles)], [
-    'package.json', 'bin/valley-technocore.js', 'src/attestation.js', 'src/batch-cli.js', 'src/cli.js', 'src/format.js', 'src/provenance.js', 'src/receipt-cli.js', 'src/receipt.js', 'src/technocore-message.js', 'src/verify-cli.js'
+    'bin/valley-technocore.js', 'src/attestation.js', 'src/batch-cli.js', 'src/cli.js', 'src/format.js', 'src/provenance.js', 'src/receipt-cli.js', 'src/receipt.js', 'src/technocore-message.js', 'src/verify-cli.js'
   ]);
+  assert.equal(Object.hasOwn(manifest.runtimeFiles, 'package.json'), false);
   for (const [profile, input] of [['message', message], ['receipt', receipt], ['evidence', evidence]]) {
     const result = await invoke(profile, input);
     assert.equal(result.status, 'verified', profile);

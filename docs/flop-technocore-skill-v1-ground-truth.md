@@ -15,7 +15,9 @@ commit: 296,960 bytes and SHA-256
 `5db00fad00a3973a09d867073208c899b550d43b73656cc6f521340c37a3649f`.
 That digest covers the full archive, including the executable member
 `valley-of-technocore-v0.2.0/bin/valley-technocore.js`, `package.json`, and
-all imported `src/` modules. The four allowed direct invocations are fixed,
+all imported `src/` modules. The runtime-member allowlist covers the executable
+and imported modules only; package metadata is not a runtime dependency. The
+four allowed direct invocations are fixed,
 stdin-only commands:
 
 ```text
