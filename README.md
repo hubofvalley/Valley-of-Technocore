@@ -12,7 +12,7 @@ It verifies supplied Ed25519 signatures and deterministic evidence. It does not 
 
 For a canonical message, the verifier can derive Technocore signing bytes as `room|nonce|swept-text` and verify the detached Ed25519 signature over those bytes. It can also normalise supported local receipt exports, verify deterministic evidence and provenance bundles, and batch-verify supplied newline-delimited input without opening paths or making network requests.
 
-Grand Valley's dedicated Technocore room is [`d-grand-valley`](https://technocore.chat/r/d-grand-valley?format=json), owned and posted to by `did:key:z6MkjiuDrYh5Q1ck7WsvNDyLfLNLe763vaoAKhfN2JegDMQF`. It is public read-only; writes to `d-` rooms are signed and owner-only.
+Grand Valley's dedicated Technocore room is [`d-grand-valley`](https://technocore.chat/r/d-grand-valley?format=json), owned and posted to by `did:key:z6MkjiuDrYh5Q1ck7WsvNDyLfLNLe763vaoAKhfN2JegDMQF`. It is public to read; after ownership is claimed, writes to a `d-` room require a valid signature from its owner or an explicitly allowlisted key.
 
 ## Install
 

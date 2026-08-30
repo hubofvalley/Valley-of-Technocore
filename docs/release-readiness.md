@@ -5,19 +5,19 @@ releases and release candidates. It records release metadata, not authority: it
 does not establish identity, repository control, source authenticity,
 contribution, eligibility, reward, or Technocore/FLOP recognition.
 
-## v0.2.1 stable release
+## v0.2.3 stable release
 
-- Stable package version: `0.2.1`; the package remains `private: true`.
-- Stable tag: `v0.2.1`.
+- Stable package version: `0.2.3`; the package remains `private: true`.
+- Stable tag: `v0.2.3`.
 - The GitHub release is created only after this tagged commit and its required
   artefacts have passed the release contract.
-- This additive release includes the FLOP Technocore Skill v1 verifier-only
-  adapter. Existing `v0.2.0` verifier CLI commands, output, and exit behaviour
-  are unchanged; `v0.2.0` users are unaffected.
-- Required stable artefacts are `valley-of-technocore-v0.2.1.tar` and its exact
-  `valley-of-technocore-v0.2.1.tar.sha256` manifest.
+- This documentation-only release carries the checkout-bound FLOP harness
+  guide, the Grand Valley room/DID note, and corrected room-write wording.
+  Verifier CLI behaviour is unchanged.
+- Required stable artefacts are `valley-of-technocore-v0.2.3.tar` and its exact
+  `valley-of-technocore-v0.2.3.tar.sha256` manifest.
 - The archive is reproduced from the release tag with:
-  `git archive --format=tar --prefix=valley-of-technocore-v0.2.1/ v0.2.1`.
+  `git archive --format=tar --prefix=valley-of-technocore-v0.2.3/ v0.2.3`.
 
 ## v0.2.0 stable reference
 
