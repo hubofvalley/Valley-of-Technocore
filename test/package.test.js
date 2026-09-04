@@ -15,7 +15,7 @@ test('npm pack installs cleanly and exposes working binaries', () => {
     assert.equal(packed.status, 0, packed.stderr);
     const metadata = JSON.parse(packed.stdout)[0];
     const names = metadata.files.map((entry) => entry.path).sort();
-    assert.ok(names.includes('bin/valley-technocore.js')); assert.ok(names.includes('scripts/check-release-contract.mjs')); assert.ok(names.includes('src/receipt.js')); assert.ok(names.includes('src/provenance.js'));
+    assert.ok(names.includes('bin/valley-technocore.js')); assert.ok(names.includes('bin/valley-technocore-receipt-intake.js')); assert.ok(names.includes('scripts/check-release-contract.mjs')); assert.ok(names.includes('src/receipt.js')); assert.ok(names.includes('src/receipt-intake.js')); assert.ok(names.includes('src/provenance.js'));
     assert.ok(names.includes('docs/cli-and-local-receipts.md')); assert.ok(names.includes('docs/first-run-flow.md'));
     assert.ok(!names.some((name) => name.startsWith('test/') || name.startsWith('fixtures/')));
     const prefix = join(temp, 'install');
@@ -24,5 +24,10 @@ test('npm pack installs cleanly and exposes working binaries', () => {
     const binary = join(prefix, 'node_modules', '.bin', 'valley-technocore');
     const verified = spawnSync(binary, ['message', 'verify'], { input: fixture, encoding: 'utf8' });
     assert.equal(verified.status, 0, verified.stderr); assert.equal(JSON.parse(verified.stdout).decision, 'verified');
+    const intakeBinary = join(prefix, 'node_modules', '.bin', 'valley-technocore-receipt-intake');
+    const receipt = JSON.parse(fixture);
+    const receiptInput = JSON.stringify({ room: receipt.room, did: receipt.did, nonce: receipt.nonce, text: receipt.text, signature: receipt.signature_b64u });
+    const intake = spawnSync(intakeBinary, ['verify'], { input: receiptInput, encoding: 'utf8' });
+    assert.equal(intake.status, 0, intake.stderr); assert.equal(JSON.parse(intake.stdout).decision, 'verified');
   } finally { rmSync(temp, { recursive: true, force: true }); }
 });

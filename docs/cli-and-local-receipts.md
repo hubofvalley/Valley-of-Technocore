@@ -78,6 +78,38 @@ For a single step:
 valley-technocore receipt verify --format human < exported-receipt.json
 ```
 
+### Lossless bare-integer nonce intake
+
+Some supplied receipt JSON can encode `nonce` as a bare JSON integer rather
+than a string. JavaScript number parsing can lose exact digits for values above
+the safe-integer range, so do not pre-parse and re-serialise that input with
+`JSON.parse`/`JSON.stringify` before verification.
+
+The current source checkout includes a dedicated compatibility entrypoint that
+preserves the lexical nonce digits before normalisation:
+
+```bash
+node ./bin/valley-technocore-receipt-intake.js normalize \
+  < exported-receipt.json \
+  > message.json
+
+node ./bin/valley-technocore-receipt-intake.js verify --format human \
+  < exported-receipt.json
+```
+
+For receipt `nonce` only, this entrypoint accepts either the existing JSON
+string or a bare JSON integer token containing 1-19 ASCII decimal digits. It
+emits the same canonical message with `nonce` as a string and verifies the same
+`room|nonce|swept-text` bytes. Signed, fractional, exponent, leading-zero, and
+more-than-19-digit numeric spellings fail closed. Duplicate-key, UTF-8, nesting,
+string-length, and 1 MiB input limits remain enforced.
+
+This compatibility entrypoint does not broaden the canonical message profile.
+`valley-technocore message verify` and `verify-technocore-message` still require
+the nonce to arrive as a JSON string. The pinned FLOP Skill v1 adapter also
+remains on its reviewed v0.2.0 runtime and is not repinned by this source-checkout
+prototype.
+
 Normalisation only maps field names into the existing verifier input. A valid result proves that the supplied message bytes match the supplied signature and public key. It does not prove who controls the key, where the export came from, whether a server stored it, whether it is new rather than replayed, or whether it carries authority or eligibility.
 
 ## Package verification
