@@ -7,6 +7,7 @@
   "type": "module",
   "bin": {
     "valley-technocore": "bin/valley-technocore.js",
+    "valley-technocore-receipt-intake": "bin/valley-technocore-receipt-intake.js",
     "valley-attestation": "bin/valley-attestation.js"
   },
   "files": [

@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- Adds the source-checkout `valley-technocore-receipt-intake` compatibility
+  entrypoint for losslessly preserving a bare 1-19 digit JSON `nonce` before
+  normalising it into canonical `technocore.msg.v1` string form.
+- Keeps the existing `valley-technocore` runtime and FLOP Skill v1 v0.2.0 pin
+  unchanged; direct message verification retains its existing strict nonce
+  type and integer limits.
+
 ## 0.2.3
 
 This documentation-only patch publishes the current `main` line after the
