@@ -28,7 +28,7 @@ test('inspects exact export bytes and re-verifies a bare 19-digit signed record'
   assert.deepEqual(report, {
     profile: 'gv.valley-of-technocore.room-export/1', room: message.room, generation: '7',
     input_sha256: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
-    bytes: bytes.length, records: 2, first_seq_observed: 40, last_seq_observed: 41,
+    bytes: bytes.length, records: 2, first_seq_observed: '40', last_seq_observed: '41',
     unsigned_records: 1, signed_records_reverified: 1, valid_signatures: 1,
     invalid_signatures: 0, signed_records_unverifiable: 0, signature_status: 'valid',
     non_claims: [
@@ -79,6 +79,13 @@ test('malformed export structure fails closed', () => {
     const result = run(['inspect', '--room', message.room, '--generation', '1'], input);
     assert.equal(result.status, 2, input); assert.equal(result.stdout, '', input); assert.match(result.stderr, pattern, input);
   }
+});
+
+test('preserves large sequence integers lexically instead of rounding them', () => {
+  const seq = '9999999999999999999999999999999999999999';
+  const input = `{"seq":${seq},"ts":"t","from":"observer","text":"x"}\n`;
+  const report = inspectRoomExport(Buffer.from(input), 'large-seq', '1');
+  assert.equal(report.first_seq_observed, seq); assert.equal(report.last_seq_observed, seq);
 });
 
 test('room and generation metadata are bounded and explicit', () => {

@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 import { InputError } from './cli.js';
 import { writeReport } from './format.js';
-import { parseLosslessReceiptJson } from './receipt-intake.js';
+import { parseLosslessJson } from './receipt-intake.js';
 import { verifyTechnocoreMessage } from './technocore-message.js';
 
 const PROFILE = 'gv.valley-of-technocore.room-export/1';
@@ -53,8 +53,8 @@ function parseArgs(args) {
 }
 
 function validateCommon(record, index, previousSeq) {
-  if (!Number.isSafeInteger(record.seq) || record.seq < 1) fail(`record ${index} seq must be a positive safe integer`);
-  if (previousSeq !== null && record.seq <= previousSeq) fail(`record ${index} seq must increase strictly`);
+  if (typeof record.seq !== 'string' || !/^[1-9][0-9]{0,63}$/u.test(record.seq)) fail(`record ${index} seq must be canonical positive decimal text up to 64 digits`);
+  if (previousSeq !== null && BigInt(record.seq) <= BigInt(previousSeq)) fail(`record ${index} seq must increase strictly`);
   if (typeof record.ts !== 'string' || record.ts.length === 0 || record.ts.length > 128) fail(`record ${index} ts must be a non-empty string up to 128 characters`);
   if (typeof record.from !== 'string' || record.from.length === 0 || record.from.length > 256) fail(`record ${index} from must be a non-empty string up to 256 characters`);
   if (typeof record.text !== 'string') fail(`record ${index} text must be a string`);
@@ -85,7 +85,7 @@ export function inspectRoomExport(bytes, room, generation) {
     const index = offset + 1;
     if (line.length === 0) fail(`record ${index} is empty`);
     if (Buffer.byteLength(line, 'utf8') > MAX_RECORD_BYTES) fail(`record ${index} exceeds 64 KiB`);
-    const record = parseLosslessReceiptJson(line);
+    const record = parseLosslessJson(line, { nonce: 19, seq: 64 });
     const kind = exact(record, SIGNED_KEYS) ? 'signed'
       : exact(record, LEGACY_SIGNED_KEYS) ? 'legacy-signed'
         : exact(record, BASE_KEYS) ? 'unsigned' : null;

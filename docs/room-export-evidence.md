@@ -39,7 +39,8 @@ The report records:
 - SHA-256 of the exact supplied export bytes, before any parsing;
 - supplied room name and supplied generation text;
 - byte and record counts;
-- first and last sequence numbers observed in the supplied capture;
+- first and last sequence numbers observed in the supplied capture, preserved
+  as exact decimal strings;
 - unsigned record count;
 - signed records that could be re-verified from their stored `sig`;
 - valid and invalid signature counts; and
@@ -49,9 +50,10 @@ The report records:
 The parser is bounded and fail-closed. Input is capped at 16 MiB and 262,144
 records, each record at 64 KiB. Duplicate JSON keys, unsupported record fields,
 non-UTF-8 input, a torn final JSONL record, invalid nonce grammar, and
-non-increasing sequence order are rejected. Bare 1-19 digit nonce tokens are
-preserved lexically before signature verification so JavaScript numeric
-coercion cannot change the signed bytes.
+non-increasing sequence order are rejected. Sequence integers are preserved
+lexically (up to a tool-owned 64-digit resource bound), and bare 1-19 digit
+nonce tokens are preserved lexically before signature verification, so
+JavaScript numeric coercion cannot change either value.
 
 Exit `0` means the supplied structure was processable and no stored signature
 failed. Exit `3` means at least one processable stored signature was invalid.
