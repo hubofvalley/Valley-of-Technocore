@@ -35,6 +35,7 @@ test('inspects exact export bytes and re-verifies a bare 19-digit signed record'
       'source_authenticity_not_established', 'server_inclusion_not_established',
       'capture_completeness_beyond_supplied_bytes_not_established',
       'generation_header_authenticity_not_established', 'recency_not_established',
+      'embedded_protocol_conformance_not_established',
       'identity_authority_eligibility_rewards_not_established'
     ]
   });
@@ -65,6 +66,15 @@ test('empty supplied exports remain deterministic and make no completeness claim
   assert.equal(report.records, 0); assert.equal(report.first_seq_observed, null); assert.equal(report.last_seq_observed, null);
   assert.equal(report.signature_status, 'not_present');
   assert.ok(report.non_claims.includes('capture_completeness_beyond_supplied_bytes_not_established'));
+  assert.ok(report.non_claims.includes('embedded_protocol_conformance_not_established'));
+});
+
+test('transport record processing never implies embedded protocol conformance', () => {
+  const malformedTclk = 'tclk1 {"type":"accept","from":"did:key:z6Mkexample","ref":"0xdead","statement":"0xbeef","nonce":"1234"}';
+  const input = `{"seq":40,"ts":"2026-09-10T00:00:00.000000Z","from":"observer","text":${JSON.stringify(malformedTclk)}}\n`;
+  const report = inspectRoomExport(Buffer.from(input), 'tclk-offers', '1');
+  assert.equal(report.signature_status, 'not_present');
+  assert.ok(report.non_claims.includes('embedded_protocol_conformance_not_established'));
 });
 
 test('malformed export structure fails closed', () => {

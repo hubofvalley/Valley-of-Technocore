@@ -17,6 +17,7 @@ const NON_CLAIMS = [
   'capture_completeness_beyond_supplied_bytes_not_established',
   'generation_header_authenticity_not_established',
   'recency_not_established',
+  'embedded_protocol_conformance_not_established',
   'identity_authority_eligibility_rewards_not_established'
 ];
 const USAGE = `usage: valley-technocore-room-export inspect --room <room> --generation <decimal> [--format json|human]

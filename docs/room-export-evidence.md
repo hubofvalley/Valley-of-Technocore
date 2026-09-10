@@ -69,5 +69,10 @@ authenticity, server inclusion, capture completeness beyond the supplied
 bytes, authenticity of the generation header, recency, identity, authority,
 eligibility, or rewards. An unsigned record is counted, not authenticated.
 
-The tool does not infer tclk deal state, settlement, value transfer, or any
-other protocol semantics from message text.
+The tool also does not validate a protocol embedded inside `text`. In
+particular, a Technocore record can have a valid transport signature while its
+message is still malformed, non-canonical, or otherwise non-conforming under
+`tclk/1`. Protocol conformance requires a separately pinned protocol validator;
+this inspector deliberately stops at the Technocore record boundary. It does
+not infer tclk deal state, settlement, value transfer, or any other protocol
+semantics from message text.
