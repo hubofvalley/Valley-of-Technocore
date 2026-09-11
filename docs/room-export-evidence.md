@@ -18,6 +18,16 @@ Primary source:
 
 - <https://github.com/flop-labs/technocore-chat/blob/45921c3e3699e01a55cde391674815367e0cff6b/tests/http/test_export.py>
 
+A live interoperability report filed as
+[`flop-labs/tclk#149`](https://github.com/flop-labs/tclk/issues/149) on
+2026-09-10 demonstrates why the lexical-preservation rule below is load-bearing:
+a retained `tclk-offers` export contained bare 19-digit transport nonces above
+`Number.MAX_SAFE_INTEGER`, including `1789031965581931047`; ordinary
+`JSON.parse` rounded those digits before tclk's transcript verifier could use
+them. The regression suite pins that observed failure class independently of
+any unresolved upstream parser patch. As of 2026-09-11, the related tclk parser
+change remains an open PR and is not treated as this tool's normative contract.
+
 The inspector does not perform that HTTP request. Capture the body and its
 `X-Room-Generation` header using a tool you trust, then pass the exact body on
 standard input and the observed metadata as fixed CLI arguments:
