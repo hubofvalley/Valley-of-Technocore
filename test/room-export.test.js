@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
+import { parseLosslessJson } from '../src/receipt-intake.js';
 import { inspectRoomExport } from '../src/room-export.js';
 
 const root = new URL('..', import.meta.url);
@@ -42,6 +43,18 @@ test('inspects exact export bytes and re-verifies a bare 19-digit signed record'
   const result = run(['inspect', '--room', message.room, '--generation', '7'], input);
   assert.equal(result.status, 0); assert.equal(result.stderr, '');
   assert.deepEqual(JSON.parse(result.stdout), report);
+});
+
+test('pins the live tclk export nonce precision failure class without JSON number coercion', () => {
+  const observedNonce = '1789031965581931047';
+  const input = `{"seq":1,"ts":"2026-09-10T00:00:00.000000Z","from":"did:key:z6Mkobserver","text":"transport-only fixture","nonce":${observedNonce}}\n`;
+  const parsed = parseLosslessJson(input.trimEnd(), { nonce: 19, seq: 64 });
+  assert.equal(parsed.nonce, observedNonce);
+  assert.notEqual(String(JSON.parse(input).nonce), observedNonce);
+  const report = inspectRoomExport(Buffer.from(input), 'tclk-offers', '1');
+  assert.equal(report.records, 1);
+  assert.equal(report.signed_records_unverifiable, 1);
+  assert.equal(report.signature_status, 'unverifiable');
 });
 
 test('reports cryptographic invalidity without losing the capture hash', () => {
