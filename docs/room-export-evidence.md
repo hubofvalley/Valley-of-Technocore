@@ -39,6 +39,21 @@ node ./bin/valley-technocore-room-export.js inspect \
   < room-export.jsonl
 ```
 
+If you also have a durable checkpoint from an earlier observation of the same
+room, supply its sequence and generation together:
+
+```bash
+node ./bin/valley-technocore-room-export.js inspect \
+  --room lobby \
+  --generation 7 \
+  --checkpoint-seq 123456 \
+  --checkpoint-generation 7 \
+  < room-export.jsonl
+```
+
+Omit both checkpoint flags on a cold start. Sequence `0` is not used as a
+synthetic checkpoint.
+
 Use `--format human` for a human-readable report. JSON is the deterministic
 machine format.
 
@@ -56,6 +71,39 @@ The report records:
 - valid and invalid signature counts; and
 - older signed-looking records whose stored shape has no `sig`, reported as
   unverifiable rather than invalid.
+
+## Durable checkpoint assessment
+
+Technocore room reads deliberately return the newest bounded window. A durable
+consumer that falls farther behind than that window can therefore skip records
+while continuing to receive successful responses. The public interoperability
+report in [`technocore-chat#481`](https://github.com/flop-labs/technocore-chat/issues/481)
+documents this failure in a production consumer, and a 2026-09-12 recheck still
+reproduces it on the live service when the lag exceeds the read limit.
+
+The optional checkpoint flags let this offline inspector compare one already-
+supplied export with one already-supplied durable checkpoint. No network read
+or recovery is performed. The machine report classifies only what the supplied
+bytes show:
+
+- `continuous_from_checkpoint`: in the supplied generation, the first observed
+  record after the checkpoint is exactly `checkpoint_seq + 1`;
+- `gap_after_checkpoint`: the first observed newer sequence is greater than the
+  expected next sequence; `unobserved_seq_start` and `unobserved_seq_end` name
+  that sequence range;
+- `no_newer_record_observed`: the capture contains no record after the supplied
+  checkpoint;
+- `empty_capture`: the supplied export body has no records;
+- `generation_mismatch`: the supplied checkpoint and supplied capture name
+  different room generations, so sequence continuity is not assessed; or
+- `not_supplied`: no checkpoint was provided.
+
+`gap_after_checkpoint` is deliberately an evidence statement, not a diagnosis:
+it does not prove that the server deleted those sequences, that the capture is
+complete, or that either supplied metadata value is authentic. Upstream work
+currently separates live retained-floor discovery (`technocore-chat#800`) from
+bridge recovery through `/export` (`technocore-chat#545`); this tool duplicates
+neither. It only makes an offline comparison reproducible after collection.
 
 The parser is bounded and fail-closed. Input is capped at 16 MiB and 262,144
 records, each record at 64 KiB. Duplicate JSON keys, unsupported record fields,
@@ -77,7 +125,9 @@ those bytes came from. The supplied generation is also metadata, not a signed
 field. A successful inspection therefore does **not** establish source
 authenticity, server inclusion, capture completeness beyond the supplied
 bytes, authenticity of the generation header, recency, identity, authority,
-eligibility, or rewards. An unsigned record is counted, not authenticated.
+eligibility, or rewards. A supplied checkpoint is also caller-provided metadata
+and is not authenticated by the export. An unsigned record is counted, not
+authenticated.
 
 The tool also does not validate a protocol embedded inside `text`. In
 particular, a Technocore record can have a valid transport signature while its

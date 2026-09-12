@@ -32,10 +32,14 @@ test('inspects exact export bytes and re-verifies a bare 19-digit signed record'
     bytes: bytes.length, records: 2, first_seq_observed: '40', last_seq_observed: '41',
     unsigned_records: 1, signed_records_reverified: 1, valid_signatures: 1,
     invalid_signatures: 0, signed_records_unverifiable: 0, signature_status: 'valid',
+    checkpoint_seq: null, checkpoint_generation: null, next_seq_expected: null,
+    first_seq_after_checkpoint_observed: null, unobserved_seq_start: null,
+    unobserved_seq_end: null, checkpoint_status: 'not_supplied',
     non_claims: [
       'source_authenticity_not_established', 'server_inclusion_not_established',
       'capture_completeness_beyond_supplied_bytes_not_established',
-      'generation_header_authenticity_not_established', 'recency_not_established',
+      'generation_header_authenticity_not_established', 'checkpoint_authenticity_not_established',
+      'recency_not_established',
       'embedded_protocol_conformance_not_established',
       'identity_authority_eligibility_rewards_not_established'
     ]
@@ -82,6 +86,51 @@ test('empty supplied exports remain deterministic and make no completeness claim
   assert.ok(report.non_claims.includes('embedded_protocol_conformance_not_established'));
 });
 
+test('assesses a supplied durable checkpoint without claiming why an observed gap exists', () => {
+  const input = '{"seq":1493328,"ts":"2026-09-05T12:02:10Z","from":"observer","text":"retained floor fixture"}\n';
+  const report = inspectRoomExport(Buffer.from(input), 'kibble', '1', { seq: '964514', generation: '1' });
+  assert.equal(report.checkpoint_status, 'gap_after_checkpoint');
+  assert.equal(report.checkpoint_seq, '964514');
+  assert.equal(report.checkpoint_generation, '1');
+  assert.equal(report.next_seq_expected, '964515');
+  assert.equal(report.first_seq_after_checkpoint_observed, '1493328');
+  assert.equal(report.unobserved_seq_start, '964515');
+  assert.equal(report.unobserved_seq_end, '1493327');
+  assert.ok(report.non_claims.includes('capture_completeness_beyond_supplied_bytes_not_established'));
+  assert.ok(report.non_claims.includes('checkpoint_authenticity_not_established'));
+});
+
+test('checkpoint continuity is generation-aware and never uses sequence continuity across epochs', () => {
+  const input = exportText();
+  const continuous = run([
+    'inspect', '--room', message.room, '--generation', '7',
+    '--checkpoint-seq', '39', '--checkpoint-generation', '7'
+  ], input);
+  assert.equal(continuous.status, 0); assert.equal(continuous.stderr, '');
+  const continuousReport = JSON.parse(continuous.stdout);
+  assert.equal(continuousReport.checkpoint_status, 'continuous_from_checkpoint');
+  assert.equal(continuousReport.first_seq_after_checkpoint_observed, '40');
+
+  const mismatch = run([
+    'inspect', '--room', message.room, '--generation', '7',
+    '--checkpoint-seq', '39', '--checkpoint-generation', '6'
+  ], input);
+  assert.equal(mismatch.status, 0); assert.equal(mismatch.stderr, '');
+  const mismatchReport = JSON.parse(mismatch.stdout);
+  assert.equal(mismatchReport.checkpoint_status, 'generation_mismatch');
+  assert.equal(mismatchReport.next_seq_expected, null);
+  assert.equal(mismatchReport.first_seq_after_checkpoint_observed, null);
+});
+
+test('checkpoint assessment distinguishes no newer records and an empty supplied capture', () => {
+  const noNewer = inspectRoomExport(Buffer.from(exportText()), message.room, '7', { seq: '41', generation: '7' });
+  assert.equal(noNewer.checkpoint_status, 'no_newer_record_observed');
+  assert.equal(noNewer.next_seq_expected, '42');
+  const empty = inspectRoomExport(Buffer.alloc(0), message.room, '7', { seq: '41', generation: '7' });
+  assert.equal(empty.checkpoint_status, 'empty_capture');
+  assert.equal(empty.next_seq_expected, '42');
+});
+
 test('transport record processing never implies embedded protocol conformance', () => {
   const malformedTclk = 'tclk1 {"type":"accept","from":"did:key:z6Mkexample","ref":"0xdead","statement":"0xbeef","nonce":"1234"}';
   const input = `{"seq":40,"ts":"2026-09-10T00:00:00.000000Z","from":"observer","text":${JSON.stringify(malformedTclk)}}\n`;
@@ -115,12 +164,16 @@ test('room and generation metadata are bounded and explicit', () => {
   for (const args of [
     ['inspect', '--room', 'UPPER', '--generation', '1'],
     ['inspect', '--room', message.room, '--generation', '01'],
+    ['inspect', '--room', message.room, '--generation', '1', '--checkpoint-seq', '1'],
+    ['inspect', '--room', message.room, '--generation', '1', '--checkpoint-generation', '1'],
+    ['inspect', '--room', message.room, '--generation', '1', '--checkpoint-seq', '0', '--checkpoint-generation', '1'],
+    ['inspect', '--room', message.room, '--generation', '1', '--checkpoint-seq', '01', '--checkpoint-generation', '1'],
     ['inspect', '--room', message.room],
     ['inspect', '--generation', '1']
   ]) assert.equal(run(args, exportText()).status, 2, args.join(' '));
   const human = run(['inspect', '--room', message.room, '--generation', '1', '--format', 'human'], exportText());
   assert.equal(human.status, 0); assert.match(human.stdout, /^profile: gv\.valley-of-technocore\.room-export\/1$/mu);
-  const help = run(['--help'], '{not json'); assert.equal(help.status, 0); assert.match(help.stdout, /X-Room-Generation/u);
+  const help = run(['--help'], '{not json'); assert.equal(help.status, 0); assert.match(help.stdout, /X-Room-Generation/u); assert.match(help.stdout, /checkpoint/u);
 });
 
 test('input, record, and UTF-8 resource boundaries fail closed', () => {
