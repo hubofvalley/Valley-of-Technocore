@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Adds the source-checkout `valley-technocore-room-export` inspector for
+  binding exact supplied Technocore export bytes to explicit room/generation
+  metadata and re-verifying stored signatures entirely offline.
+- Lets that inspector optionally compare a supplied durable sequence/generation
+  checkpoint with the supplied export, reporting continuity or an observed
+  sequence gap without claiming why the gap exists or performing recovery.
+- Keeps capture-origin, generation-authenticity, completeness, recency,
+  identity, authority, eligibility, and reward claims explicitly out of scope.
 - Adds the source-checkout `valley-technocore-receipt-intake` compatibility
   entrypoint for losslessly preserving a bare 1-19 digit JSON `nonce` before
   normalising it into canonical `technocore.msg.v1` string form.

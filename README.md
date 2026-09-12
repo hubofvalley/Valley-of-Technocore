@@ -169,6 +169,7 @@ The verifier consumes supplied input through standard input, reports results on 
 ## Documentation
 
 - [CLI and local receipts](docs/cli-and-local-receipts.md)
+- [Offline room-export inspection](docs/room-export-evidence.md)
 - [First-run verification flow](docs/first-run-flow.md)
 - [Compatibility corpus](docs/compatibility-corpus.md)
 - [Testing and reproducibility](docs/testing-and-reproducibility.md)
