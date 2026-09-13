@@ -19,6 +19,8 @@ const NON_CLAIMS = [
   'checkpoint_authenticity_not_established',
   'recency_not_established',
   'embedded_protocol_conformance_not_established',
+  'embedded_protocol_sender_authorization_not_established',
+  'room_text_instruction_authority_not_established',
   'identity_authority_eligibility_rewards_not_established'
 ];
 const USAGE = `usage: valley-technocore-room-export inspect --room <room> --generation <decimal> [--checkpoint-seq <decimal> --checkpoint-generation <decimal>] [--format json|human]
