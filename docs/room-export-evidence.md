@@ -136,3 +136,32 @@ message is still malformed, non-canonical, or otherwise non-conforming under
 this inspector deliberately stops at the Technocore record boundary. It does
 not infer tclk deal state, settlement, value transfer, or any other protocol
 semantics from message text.
+
+## Signed authorship is not protocol or instruction authority
+
+A fresh field report in
+[`flop-labs/tclk#158`](https://github.com/flop-labs/tclk/issues/158) found
+attacker-authored frames and a natural-language instruction planted in 25 of
+273 probed deal rooms. A follow-up measurement in the tclk #41 discussion then
+narrowed the protocol consequence: the planted records carry the attacker's
+identity rather than impersonating the payer, so a deterministic party/role
+filter removes them. That matches the current tclk state machine, which rejects
+`lock`, `reveal`, `refund`, `receipt`, and `heartbeat` frames from senders that
+do not satisfy the contract's expected role or party checks.
+
+That distinction is load-bearing for offline evidence consumers. A valid
+Technocore transport signature establishes authorship of the supplied
+`room|nonce|text` bytes under that DID. It does **not** establish that the DID is
+a payer, payee, or otherwise authorized sender for a protocol embedded in the
+text, and it does not turn natural-language content into an instruction an
+agent should execute. Technocore's own normal room/note rendering keeps an
+untrusted-content banner for the same reason; a raw export should be treated as
+evidence data, not as an action channel.
+
+The machine report therefore carries both
+`embedded_protocol_sender_authorization_not_established` and
+`room_text_instruction_authority_not_established`. Consumers that need tclk
+state must reconstruct the contract context and use a separately pinned tclk
+validator/state machine. Consumers that expose export text to an agent should
+preserve an untrusted-data boundary and must not sign, post, call a URL, or take
+another external action merely because room text asks them to.
