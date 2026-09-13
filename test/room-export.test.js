@@ -41,6 +41,8 @@ test('inspects exact export bytes and re-verifies a bare 19-digit signed record'
       'generation_header_authenticity_not_established', 'checkpoint_authenticity_not_established',
       'recency_not_established',
       'embedded_protocol_conformance_not_established',
+      'embedded_protocol_sender_authorization_not_established',
+      'room_text_instruction_authority_not_established',
       'identity_authority_eligibility_rewards_not_established'
     ]
   });
@@ -137,6 +139,8 @@ test('transport record processing never implies embedded protocol conformance', 
   const report = inspectRoomExport(Buffer.from(input), 'tclk-offers', '1');
   assert.equal(report.signature_status, 'not_present');
   assert.ok(report.non_claims.includes('embedded_protocol_conformance_not_established'));
+  assert.ok(report.non_claims.includes('embedded_protocol_sender_authorization_not_established'));
+  assert.ok(report.non_claims.includes('room_text_instruction_authority_not_established'));
 });
 
 test('malformed export structure fails closed', () => {
