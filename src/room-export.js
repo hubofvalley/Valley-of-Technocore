@@ -16,6 +16,8 @@ const NON_CLAIMS = [
   'server_inclusion_not_established',
   'capture_completeness_beyond_supplied_bytes_not_established',
   'generation_header_authenticity_not_established',
+  'venue_sequence_authenticity_not_established',
+  'venue_timestamp_authenticity_not_established',
   'checkpoint_authenticity_not_established',
   'recency_not_established',
   'embedded_protocol_conformance_not_established',
