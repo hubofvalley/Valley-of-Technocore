@@ -16,7 +16,7 @@ function fail(message) {
   throw new InputError(message);
 }
 
-export function parseLosslessReceiptJson(text) {
+export function parseLosslessJson(text, decimalStringKeys = { nonce: 19 }) {
   let i = 0;
   const ws = () => { while (text[i] === ' ' || text[i] === '\t' || text[i] === '\r' || text[i] === '\n') i += 1; };
   const parseString = () => {
@@ -66,15 +66,17 @@ export function parseLosslessReceiptJson(text) {
         if (text[i++] !== ',') fail('expected comma');
       }
     }
-    if (key === 'nonce' && (text[i] === '-' || /\d/u.test(text[i] ?? ''))) {
-      if (text[i] === '-') fail('nonce integer must be 1-19 ASCII decimal digits');
-      const token = /(?:0|[1-9]\d{0,18})/uy;
+    const decimalDigits = decimalStringKeys[key];
+    if (decimalDigits !== undefined && (text[i] === '-' || /\d/u.test(text[i] ?? ''))) {
+      if (!Number.isSafeInteger(decimalDigits) || decimalDigits < 1 || decimalDigits > 64) fail('invalid lossless decimal parser configuration');
+      if (text[i] === '-') fail(`${key} integer must be 1-${decimalDigits} ASCII decimal digits`);
+      const token = new RegExp(`(?:0|[1-9]\\d{0,${decimalDigits - 1}})`, 'uy');
       token.lastIndex = i;
       const decimal = token.exec(text)?.[0];
-      if (!decimal) fail('nonce integer must be 1-19 ASCII decimal digits');
+      if (!decimal) fail(`${key} integer must be 1-${decimalDigits} ASCII decimal digits`);
       i += decimal.length;
       if (/\d/u.test(text[i] ?? '') || text[i] === '.' || text[i] === 'e' || text[i] === 'E') {
-        fail('nonce integer must be 1-19 ASCII decimal digits');
+        fail(`${key} integer must be 1-${decimalDigits} ASCII decimal digits`);
       }
       return decimal;
     }
@@ -92,6 +94,10 @@ export function parseLosslessReceiptJson(text) {
   const result = value(); ws(); if (i !== text.length) fail('trailing JSON content');
   if (!result || Array.isArray(result) || typeof result !== 'object') fail('top level must be an object');
   return result;
+}
+
+export function parseLosslessReceiptJson(text) {
+  return parseLosslessJson(text);
 }
 
 async function readReceipt(stream) {

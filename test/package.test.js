@@ -15,8 +15,8 @@ test('npm pack installs cleanly and exposes working binaries', () => {
     assert.equal(packed.status, 0, packed.stderr);
     const metadata = JSON.parse(packed.stdout)[0];
     const names = metadata.files.map((entry) => entry.path).sort();
-    assert.ok(names.includes('bin/valley-technocore.js')); assert.ok(names.includes('bin/valley-technocore-receipt-intake.js')); assert.ok(names.includes('scripts/check-release-contract.mjs')); assert.ok(names.includes('src/receipt.js')); assert.ok(names.includes('src/receipt-intake.js')); assert.ok(names.includes('src/provenance.js'));
-    assert.ok(names.includes('docs/cli-and-local-receipts.md')); assert.ok(names.includes('docs/first-run-flow.md'));
+    assert.ok(names.includes('bin/valley-technocore.js')); assert.ok(names.includes('bin/valley-technocore-receipt-intake.js')); assert.ok(names.includes('bin/valley-technocore-room-export.js')); assert.ok(names.includes('scripts/check-release-contract.mjs')); assert.ok(names.includes('src/receipt.js')); assert.ok(names.includes('src/receipt-intake.js')); assert.ok(names.includes('src/room-export.js')); assert.ok(names.includes('src/provenance.js'));
+    assert.ok(names.includes('docs/cli-and-local-receipts.md')); assert.ok(names.includes('docs/first-run-flow.md')); assert.ok(names.includes('docs/room-export-evidence.md'));
     assert.ok(!names.some((name) => name.startsWith('test/') || name.startsWith('fixtures/')));
     const prefix = join(temp, 'install');
     const installed = spawnSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--prefix', prefix, join(temp, metadata.filename)], { encoding: 'utf8' });
@@ -29,5 +29,9 @@ test('npm pack installs cleanly and exposes working binaries', () => {
     const receiptInput = JSON.stringify({ room: receipt.room, did: receipt.did, nonce: receipt.nonce, text: receipt.text, signature: receipt.signature_b64u });
     const intake = spawnSync(intakeBinary, ['verify'], { input: receiptInput, encoding: 'utf8' });
     assert.equal(intake.status, 0, intake.stderr); assert.equal(JSON.parse(intake.stdout).decision, 'verified');
+    const exportBinary = join(prefix, 'node_modules', '.bin', 'valley-technocore-room-export');
+    const exportInput = `${JSON.stringify({ seq: 1, ts: '2026-09-09T00:00:00.000000Z', from: receipt.did, text: receipt.text, nonce: Number(receipt.nonce), sig: receipt.signature_b64u })}\n`;
+    const inspected = spawnSync(exportBinary, ['inspect', '--room', receipt.room, '--generation', '1'], { input: exportInput, encoding: 'utf8' });
+    assert.equal(inspected.status, 0, inspected.stderr); assert.equal(JSON.parse(inspected.stdout).signature_status, 'valid');
   } finally { rmSync(temp, { recursive: true, force: true }); }
 });
