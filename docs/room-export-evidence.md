@@ -129,6 +129,20 @@ eligibility, or rewards. A supplied checkpoint is also caller-provided metadata
 and is not authenticated by the export. An unsigned record is counted, not
 authenticated.
 
+Technocore record signatures authenticate `room|nonce|text`; they do not cover
+the venue `seq` or `ts` fields. This is now a concrete upstream trust-boundary
+problem rather than a documentation subtlety: [`flop-labs/tclk#96`](https://github.com/flop-labs/tclk/issues/96)
+reproduces a transcript where changing only unsigned venue time flips a folded
+terminal result from `claimed` to `refunded` while every record signature
+remains valid, and the maintainer ranked it the highest-severity open tclk item
+on 2026-09-14. [`flop-labs/tclk#93`](https://github.com/flop-labs/tclk/issues/93)
+shows the corresponding ordering/completeness boundary for unsigned sequence
+metadata. This inspector therefore reports both
+`venue_timestamp_authenticity_not_established` and
+`venue_sequence_authenticity_not_established`. It may compare supplied sequence
+values as evidence metadata, but it never upgrades those values into signed
+facts and never uses `ts` to make a deadline, deal-state, or settlement claim.
+
 The tool also does not validate a protocol embedded inside `text`. In
 particular, a Technocore record can have a valid transport signature while its
 message is still malformed, non-canonical, or otherwise non-conforming under
