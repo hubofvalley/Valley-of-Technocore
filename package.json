@@ -8,6 +8,7 @@
   "bin": {
     "valley-technocore": "bin/valley-technocore.js",
     "valley-technocore-receipt-intake": "bin/valley-technocore-receipt-intake.js",
+    "valley-technocore-room-export": "bin/valley-technocore-room-export.js",
     "valley-attestation": "bin/valley-attestation.js"
   },
   "files": [
