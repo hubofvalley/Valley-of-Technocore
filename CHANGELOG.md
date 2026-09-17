@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.2.4
+
+This additive patch release publishes the source-checkout offline evidence and
+compatibility tools merged since `v0.2.3`. The package remains private and is
+not published to npm.
+
 - Adds the source-checkout `valley-technocore-room-export` inspector for
   binding exact supplied Technocore export bytes to explicit room/generation
   metadata and re-verifying stored signatures entirely offline.

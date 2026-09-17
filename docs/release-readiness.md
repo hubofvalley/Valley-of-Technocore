@@ -5,19 +5,20 @@ releases and release candidates. It records release metadata, not authority: it
 does not establish identity, repository control, source authenticity,
 contribution, eligibility, reward, or Technocore/FLOP recognition.
 
-## v0.2.3 stable release
+## v0.2.4 stable release
 
-- Stable package version: `0.2.3`; the package remains `private: true`.
-- Stable tag: `v0.2.3`.
+- Stable package version: `0.2.4`; the package remains `private: true`.
+- Stable tag: `v0.2.4`.
 - The GitHub release is created only after this tagged commit and its required
   artefacts have passed the release contract.
-- This documentation-only release carries the checkout-bound FLOP harness
-  guide, the Grand Valley room/DID note, and corrected room-write wording.
-  Verifier CLI behaviour is unchanged.
-- Required stable artefacts are `valley-of-technocore-v0.2.3.tar` and its exact
-  `valley-of-technocore-v0.2.3.tar.sha256` manifest.
+- This additive release publishes the source-checkout room-export inspector and
+  lossless receipt-intake compatibility entrypoint merged since `v0.2.3`.
+  Existing `valley-technocore` verifier CLI behaviour and the FLOP Skill v1
+  v0.2.0 runtime pin remain unchanged.
+- Required stable artefacts are `valley-of-technocore-v0.2.4.tar` and its exact
+  `valley-of-technocore-v0.2.4.tar.sha256` manifest.
 - The archive is reproduced from the release tag with:
-  `git archive --format=tar --prefix=valley-of-technocore-v0.2.3/ v0.2.3`.
+  `git archive --format=tar --prefix=valley-of-technocore-v0.2.4/ v0.2.4`.
 
 ## v0.2.0 stable reference
 
