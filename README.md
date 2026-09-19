@@ -25,16 +25,16 @@ Requires Node.js 22 or newer. Choose one path:
 
 ### Verified pilot installation
 
-This is the shortest path. It installs the current commit-pinned pilot from a
+This is the shortest path. It installs the current release-pinned pilot from a
 GitHub Release, never from the npm registry. Download the archive and its
 checksum manifest, verify them, then install the already-downloaded archive
 offline:
 
 ```bash
-curl -fLO https://github.com/hubofvalley/Valley-of-Technocore/releases/download/v0.2.2/valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar
-curl -fLO https://github.com/hubofvalley/Valley-of-Technocore/releases/download/v0.2.2/valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar.sha256
-sha256sum -c valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar.sha256
-npm install -g --ignore-scripts --offline --no-audit --no-fund ./valley-of-technocore-pilot-fc204e0635d11a434623dc5d16e53874784c28b5.tar
+curl -fLO https://github.com/hubofvalley/Valley-of-Technocore/releases/download/v0.2.4/valley-of-technocore-v0.2.4.tar
+curl -fLO https://github.com/hubofvalley/Valley-of-Technocore/releases/download/v0.2.4/valley-of-technocore-v0.2.4.tar.sha256
+sha256sum -c valley-of-technocore-v0.2.4.tar.sha256
+npm install -g --ignore-scripts --offline --no-audit --no-fund ./valley-of-technocore-v0.2.4.tar
 valley-technocore --help
 ```
 
@@ -42,7 +42,7 @@ On macOS, use `shasum -a 256 -c <manifest>` in place of `sha256sum -c <manifest>
 
 The archive is a pilot evaluation release. It is not an npm publication; do not
 skip the checksum verification or remove the offline install flag. See the
-[v0.2.2 release](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.2.2)
+[v0.2.4 release](https://github.com/hubofvalley/Valley-of-Technocore/releases/tag/v0.2.4)
 for its exact files and digest.
 
 ### Source checkout
@@ -87,7 +87,7 @@ exit: 0
 | --- | --- |
 | Node.js is too old | Run `node --version`; the CLI requires Node.js 22 or newer. |
 | Checksum verification fails | Stop. Re-download the archive and its matching `.tar.sha256` from the same GitHub Release. |
-| Archive and checksum pair do not match | The two filenames must contain the same commit `<SHA>`; verify the manifest before installing. |
+| Archive and checksum pair do not match | The two filenames must target the same release version; verify the manifest before installing. |
 | `valley-technocore` is not found after installation | Check the global npm binary directory is on `PATH`, then open a new shell and retry `valley-technocore --help`. |
 | Offline npm install fails or tries the network | Use the exact local tarball command above with `--offline`; confirm the tarball path is valid and do not weaken the offline flag. |
 | A `verified` result seems to prove identity or authorship | It does not; read [What verification means](#what-verification-means), then use the [issues](https://github.com/hubofvalley/Valley-of-Technocore/issues) for anything else. |
