@@ -6,17 +6,23 @@ independent evidence aid, not a Technocore server feature.
 
 ## Source contract
 
-The compatibility boundary is pinned to the public Technocore `v0.13.0`
-release commit `45921c3e3699e01a55cde391674815367e0cff6b`. Its tests specify
-that `GET /r/<room>/export` returns the
-retained room file as raw JSONL, byte-identical to stored bytes, and that a
-stored signed record can be re-verified offline from the dump plus the room
-name. The response also carries `X-Room-Generation`; Technocore changes that
-generation when a room is reaped and recreated.
+The compatibility boundary is pinned to the public Technocore `v0.14.0`
+release commit `e4c4f73f3b28612d7161170b11e08e580b02123a`. Its tagged tests
+specify that `GET /r/<room>/export` returns the retained room file as raw
+JSONL, byte-identical to stored bytes, and that a stored signed record can be
+re-verified offline from the dump plus the room name. The response also
+carries `X-Room-Generation`; Technocore changes that generation when a room is
+reaped and recreated.
 
-Primary source:
+Technocore `v0.14.0` adds Brotli/gzip HTTP transport compression while keeping
+`/r/<room>/export` byte-exact after HTTP decoding. This inspector therefore
+expects the decoded response body bytes, not a content-encoded wire
+representation; it does not implement HTTP decompression itself.
 
-- <https://github.com/flop-labs/technocore-chat/blob/45921c3e3699e01a55cde391674815367e0cff6b/tests/http/test_export.py>
+Primary sources:
+
+- <https://github.com/flop-labs/technocore-chat/blob/e4c4f73f3b28612d7161170b11e08e580b02123a/tests/http/test_export.py>
+- <https://github.com/flop-labs/technocore-chat/releases/tag/v0.14.0>
 
 A live interoperability report filed as
 [`flop-labs/tclk#149`](https://github.com/flop-labs/tclk/issues/149) on
